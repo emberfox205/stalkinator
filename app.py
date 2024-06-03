@@ -18,7 +18,7 @@ latest_token = None
 
 @app.route("/data", methods=["POST", "GET"])
 def data():
-    # This handles requests to send new coords to be marked
+    # This handles requests from get_coords() to send new coords to be marked
     if request.method == "POST":
         json_data = {}
 
@@ -71,13 +71,15 @@ def update_token():
     global latest_token
     latest_token = oauth_token_get()
 
+# Send POST requests to update data.json
 def get_coords():
     while not latest_token:
         time.sleep(1)
     ipv4_address = socket.gethostbyname(socket.gethostname())
+    # Flexibily set the IP address (for dev env only that is)
     coords_get(access_token=latest_token, url=f"http://{ipv4_address}:8080/data")
 
-# 
+# Initiate scheduler (To run multiprocessing)
 scheduler = BackgroundScheduler(job_defaults={'max_instances': 1})
 scheduler.add_job(func=update_token, trigger="interval", seconds=250, next_run_time=datetime.datetime.now())
 scheduler.add_job(func=get_coords, trigger="interval", seconds=10, next_run_time=datetime.datetime.now())
@@ -93,5 +95,6 @@ if __name__ == "__main__":
             markers = json.load(file)
             
     scheduler.start()
+    # Exit the scheduler as the server shuts down
     atexit.register(lambda: scheduler.shutdown())
     app.run(host="0.0.0.0", port=8080, debug=True)

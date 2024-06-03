@@ -3,7 +3,6 @@ import iot_api_client as iot
 from iot_api_client.rest import ApiException
 from iot_api_client.configuration import Configuration
 import  iot_api_client.apis.tags.properties_v2_api as PropertyV2
-from pprint import pprint
 from dotenv import load_dotenv
 import os, requests 
 from oath_token_get import oauth_token_get

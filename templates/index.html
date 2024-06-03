@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>Stalkinator</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+
+	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"
+		integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ=="
+		crossorigin="" />
+	<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"
+		integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ=="
+		crossorigin=""></script>
+
+	<script src="../static/js/leaflet.geometryutil.js"></script>
+	<script src="../static/js/leaflet-arrowheads.js"></script>
+	<script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+</head>
+
+<body>
+
+	<div id="topbar" class="topnav">
+		<h3>Stalkinator</h3>
+	</div>
+
+	<div id="button-container">
+		<button id="last-position-button" class="button" onclick="goToLastPosition()">
+			<h4>Last position</h4>
+		</button>
+
+		<button id="sidebar-button" class="button" onclick="toggle()">
+			<h4>☰</h4>
+		</button>
+	</div>
+
+	<div id="sidebar-container" class="w3-sidebar w3-bar-block w3-card">
+		<div id="sidebar-content" class="w3-sidebar w3-bar-block w3-card">
+			<div id="marker-list"></div>
+		</div>
+	</div>
+
+	<div id="map" class="w3-container"></div>
+
+	<script>
+		var map = L.map('map').fitWorld();
+
+		var sidebar_open = false;
+
+		var index = 0;
+		var markers = []
+		// Store existing markers
+		var leafletMarkers = []
+
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 19,
+			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+
+		}).addTo(map);
+
+		map.setZoom(2.5);
+
+		function toggle() {
+			const element = document.getElementById("sidebar-container");
+
+			if (!sidebar_open) {
+				element.classList.remove("sidebar-container-out");
+				element.classList.add("sidebar-container-in");
+			}
+			else {
+				element.classList.remove("sidebar-container-in");
+				element.classList.add("sidebar-container-out");
+			}
+
+			sidebar_open = !sidebar_open;
+		}
+
+		function goToLastPosition() {
+			const marker = markers[markers.length - 1];
+			map.flyTo(new L.latLng(marker.lat, marker.lon), 15);
+		}
+
+		function zoomToPosition(event) {
+			const marker = markers[event.target.marker_index];
+			map.flyTo(new L.latLng(marker.lat, marker.lon), 15);
+		}
+
+		function update() {
+
+			var data = $.get("/data", data = { "index": index });
+
+			data.done(function (data) {
+
+				try {
+					const new_markers = JSON.parse(data);
+
+					index += new_markers.length
+
+					for (var i = 0; i < new_markers.length; i++) {
+						const marker = new_markers[i];
+						const matches = marker.time.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
+
+						// Date is given in UTC+0, so we let JS handle the timezone
+						const date = new Date(`${+matches[3]}/${+matches[2]}/${+matches[1]} ${+matches[4]}:${+matches[5]}:${+matches[6]}+00:00`);
+						
+						console.log("Adding marker at %f, %f for time %s", marker.lat, marker.lon, date.toLocaleString());
+						markers.push(marker);
+
+						var leafletMarker = L.marker([marker.lat, marker.lon]).addTo(map).bindPopup(`${marker.index}: ${date.toLocaleString()}`)
+						
+						// Add the marker to the array 
+
+						leafletMarkers.push(leafletMarker);
+
+						// Add clickable marker log
+						let element = document.createElement("button")
+						element.className = "w3-bar-item w3-button";
+						element.id = "entry";
+						element.textContent = `${marker.lat}N, ${marker.lon}E\r\n`
+						element.textContent += `${date.toLocaleString()}`
+						element.style = "font-size: 14px;";
+						element.marker_index = marker.index;
+						element.addEventListener("click", zoomToPosition)
+
+						document.getElementById("marker-list").prepend(element);
+
+						if (i == new_markers.length - 1) {
+							map.flyTo(new L.latLng(marker.lat, marker.lon));
+						} 
+					}
+
+					while (leafletMarkers.length > 1) {
+						var markerToRemove = leafletMarkers.shift();
+						map.removeLayer(markerToRemove);
+					}
+				}
+
+				catch (err) {
+					if (data != "No new entries") {
+						console.log("Failed to parse marker data: %s. Error: %s", data, err);
+					}
+				}
+			});
+		}
+
+		// Do initial update and then request data on an interval
+		update();
+		setInterval(update, 20000);
+
+	</script>
+</body>
+
+</html>

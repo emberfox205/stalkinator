@@ -11,18 +11,17 @@ from datetime import datetime
 def coords_get(access_token, url):
     load_dotenv()
     THING_ID = os.getenv('THING_ID')
-    PID=os.getenv('PID')
+    
     # configure and instance the API client
     client_config = Configuration(host="https://api2.arduino.cc/iot")
     client_config.access_token = access_token
     client = iot.ApiClient(client_config)
 
-    api_instance = PropertyV2.PropertiesV2Show(client)
+    api_instance = PropertyV2.PropertiesV2List(client)
 
     # example passing only required values which don't have defaults set
     path_params = {
         'id': THING_ID,
-        'pid': PID,
     }
     query_params = {
     }
@@ -30,20 +29,20 @@ def coords_get(access_token, url):
     }
 
     try:
-        # show properties_v2
-        api_response = api_instance.properties_v2_show(
+        # list properties_v2
+        api_response = api_instance.properties_v2_list(
             path_params=path_params,
             query_params=query_params,
             header_params=header_params,
         )
     except ApiException as e:
-        print("Exception when calling PropertiesV2Api->properties_v2_show: %s\n" % e)
+        print("Exception when calling PropertiesV2Api->properties_v2_list: %s\n" % e)
     else:
-        coords = dict(dict(api_response.body)["last_value"])
+        GPS = dict(dict(api_response.body[-1])['last_value'])
         now = datetime.now()
         data = {
-            "lat": str(coords["lat"]),
-            "lon": str(coords["lon"]),
+            "lat": str(GPS['lat']),
+            "lon": str(GPS['lon']),
             "time": str(now.strftime("%m/%d/%Y %H:%M:%S")),
         }
         requests.post(url, json=data)

@@ -8,7 +8,7 @@ def oauth_token_get():
     CLIENT_ID=os.getenv('CLIENT_ID')
     CLIENT_SECRET=os.getenv('CLIENT_SECRET')
 
-    oauth_client = BackendApplicationClient(client_id="PqqvvAe26Xy2RhaVOetu6XMiyR77pnLq")
+    oauth_client = BackendApplicationClient(client_id=CLIENT_ID)
     token_url = "https://api2.arduino.cc/iot/v1/clients/token"
 
     oauth = OAuth2Session(client=oauth_client)
@@ -25,4 +25,4 @@ def oauth_token_get():
 
 
 if __name__ == "__main__":
-    oauth_token_get()
+    print(oauth_token_get())

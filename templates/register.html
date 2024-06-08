@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for msg in messages %}
+                <p> {{msg}}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+   
+    <div class="background">
+        <div class="rounded-rectangle">
+        <div class="login">
+            <div class="title_login">Register</div>
+                <form action="#" method="post"> 
+                    {{form.hidden_tag() }}
+                    {{form.email }}<br>
+                    {{form.password }}<br>
+                    {{form.tid}}<br>
+                    {{form.submit}}<br> <a href="/login">Already have an account? Login here!</a>
+                </form> 
+            </div>
+        </div>
+    </div>
+
+
+    
+{% endblock %}

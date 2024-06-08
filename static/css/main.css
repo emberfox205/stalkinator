@@ -1,0 +1,73 @@
+body, html {
+    margin: 0;
+    font-family: sans-serif;
+    background-color: white;
+    text-align: center;
+}
+.background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('img/white.jpg') center center/contain;
+      /* Add blur effect to background */
+    z-index: -1;
+  }
+  
+.rounded-rectangle {
+    position: relative;
+    border-radius: 15px;
+    padding: 40px;  /* Increase padding to make the rectangle taller */
+    /* height: 500px; Uncomment this if you want to set an explicit height */
+    margin-top: 15%;
+    margin-left: 33%;
+    width: 35%;
+    text-align: left;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ensure content stays within bounds */
+    z-index: 0;
+}
+
+.rounded-rectangle::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-color: black;
+    background: url('img/white.jpg') no-repeat center center/cover;
+    filter: blur(20px); /* Blur the background image */
+    z-index: -1; /* Ensure it's behind content */
+}
+  
+.login {
+    position: relative;
+    z-index: 1; /* Ensure this is above the blurred background */
+    color: black;
+    font-weight: bold;
+    display: flex; /* Add this */
+    justify-content: center; /* Add this */
+    align-items: center; /* Add this */
+    text-align: center; /* Change this from right to center */
+}
+
+.title_login {
+    font-size: 40px;
+    font-weight: bold;
+    text-align: center; /* Change this from right to center */
+    order: -1; /* Add this */
+}
+
+.form {
+    display: flex; /* Add this */
+    flex-direction: column; /* Add this */
+    justify-content: center; /* Add this */
+    align-items: center; /* Add this */
+    margin-top: 20px;
+}
+
+#content {
+    width: 100%;
+}

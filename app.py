@@ -5,6 +5,9 @@ from os import path, stat
 from oath_token_get import oauth_token_get
 from coords_get import coords_get
 import socket, time, atexit, datetime
+from dotenv import load_dotenv
+from get_places import fetch_and_store_places
+import threading
 
 DATAFILE = "data.json"
 
@@ -14,7 +17,6 @@ app = Flask(__name__)
 
 # Global var, bad idea
 latest_token = None
-
 
 @app.route("/data", methods=["POST", "GET"])
 def data():
@@ -44,9 +46,9 @@ def data():
 
         if "index" in request.args:
             index = int(
-                request.args["index"]) if request.args["index"]. isdigit() else None
+                request.args["index"]) if request.args["index"].isdigit() else None
 
-            if index < 0 or index == None:
+            if index < 0 or index is None:
                 return "Invalid index"
             elif index >= len(markers):
                 return "No new entries"
@@ -79,22 +81,33 @@ def get_coords():
     # Flexibily set the IP address (for dev env only that is)
     coords_get(access_token=latest_token, url=f"http://{ipv4_address}:8080/data")
 
+def fetch_places_once():
+    while not markers:
+        time.sleep(1) # This is needed to wait for the marker to and avoid ValueError
+    fetch_and_store_places(markers)
+
 # Initiate scheduler (To run multiprocessing)
 scheduler = BackgroundScheduler(job_defaults={'max_instances': 1})
 scheduler.add_job(func=update_token, trigger="interval", seconds=250, next_run_time=datetime.datetime.now())
 scheduler.add_job(func=get_coords, trigger="interval", seconds=10, next_run_time=datetime.datetime.now())
 
 if __name__ == "__main__":
+    load_dotenv()
 
     if not path.isfile(DATAFILE):
         # Create the file
-        open(DATAFILE, "x")
+        with open(DATAFILE, "w") as file:
+            file.write("[]")
 
-    with open("data.json", "r") as file:
+    with open(DATAFILE, "r") as file:
         if stat(DATAFILE).st_size != 0:
             markers = json.load(file)
-            
+
     scheduler.start()
     # Exit the scheduler as the server shuts down
     atexit.register(lambda: scheduler.shutdown())
+    
+    # Run fetch_and_store_places in a separate thread after the server starts
+    threading.Thread(target=fetch_places_once).start() # Upon running this places.db will be create
+
     app.run(host="0.0.0.0", port=8080, debug=True)

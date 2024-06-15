@@ -137,7 +137,7 @@ def data():
         cur = connect.cursor()
         # Execute a query
         cur.execute("""CREATE TABLE IF NOT EXISTS Makers (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, time string, thing_id) """)
-        cur.execute(f"SELECT lon, lat, time FROM Makers WHERE thing_id = '{session['thing_id']}' LIMIT 20")
+        cur.execute(f"SELECT lon, lat, time FROM Makers WHERE thing_id = '{session['thing_id']}' order by time desc LIMIT 20")
         # Fetch all rows as dictionaries
         rows = cur.fetchall()
         markers = []
@@ -146,8 +146,9 @@ def data():
             row["index"] = i
             markers.append(row)
         
-                # Send a list of new markers to the Front-end
-        return json.dumps(markers)
+        hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
+        print(hahaha)
+        return json.dumps(hahaha)
 
     else:
         return "Method not supported"

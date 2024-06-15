@@ -1,40 +1,39 @@
 from libs.oauth_token_get import oauth_token_get
 from libs.coords_get import coords_get
 import time, socket
-from multiprocessing import Process, Manager
+import threading
 import sqlite3
 
-manager = Manager()
-latest_token = manager.Value('d', None)  # 'd' is the typecode for strings in this context
 
-def update_token(shared_token):
+latest_token = None
+def update_token():
+    global latest_token
     while True:
         # Update the shared token value
-        shared_token.value = oauth_token_get()
+        latest_token = oauth_token_get()
         #print(shared_token.value)
         time.sleep(250)
 
-def get_coords(shared_token):
+def get_coords():
     
     while True:
         connect = sqlite3.connect("instance/stalkinator.db")
         cur = connect.cursor()
-        ipv4_address = socket.gethostbyname(socket.gethostname())
         cur.execute("Select tid from user")
         connect.commit()
         values = set([row[0] for row in cur.fetchall()])
         for value in values:
-            coords_get(access_token=shared_token.value, cur = cur, connect = connect ,thing_id = value)
+            coords_get(access_token=latest_token, cur = cur, connect = connect ,thing_id = value)
         time.sleep(10)
 
 if __name__ == "__main__":
     # Pass the shared latest_token to both functions
-    p1 = Process(target=update_token, args=(latest_token,))
-    p2 = Process(target=get_coords, args=(latest_token,))
-    p1.start()
-    if not latest_token.value:
+    t1 = threading.Thread(target=update_token)
+    t2 = threading.Thread(target=get_coords)
+    t1.start()
+    while not latest_token:
         print("Waiting for token...")
         time.sleep(2)
-    p2.start()
-    p1.join()
-    p2.join()
+    t2.start()
+    t1.join()
+    t2.join()

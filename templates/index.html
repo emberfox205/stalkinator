@@ -6,7 +6,7 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
-	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/style_copy.css') }}" />
 
 	<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 
@@ -23,127 +23,206 @@
 </head>
 
 <body>
-
-	<div id="topbar" class="topnav">
-		<h3>Stalkinator</h3>
-	</div>
-
-	<div id="button-container">
-		<button id="last-position-button" class="button" onclick="goToLastPosition()">
-			<h4>Last position</h4>
-		</button>
-
-		<button id="sidebar-button" class="button" onclick="toggle()">
-			<h4>☰</h4>
-		</button>
-	</div>
-		<ul class="navbar-nav">
-			<li class="nav-item">
-			<a class="nav-link" href="/logout">Log out</a>
+	<div id="menu-container">
+		<ul id="menus" class="vertical-fields">
+			<li>
+				<button id="dashboard" class="button" onclick="toggle_show()">
+					<img src="../static/icons/dashboard.png" alt="dashboard icon" class="button-icon">
+					<span class="tooltiptext">Dashboard</span>
+				</button>
+			</li>
+			<li>
+				<button id="safezone" class="button" onclick="toggle_show()">
+					<img src="../static/icons/home.png" alt="dashboard icon" class="button-icon">
+					<span class="tooltiptext">Safezone</span>
+				</button>
+			</li>
+			<li>
+				<button id="dangerzone" class="button" onclick="toggle_show()">
+					<img src="../static/icons/danger.png" alt="dashboard icon" class="button-icon">
+					<span class="tooltiptext">Dangerzone</span>
+				</button>
+			</li>
+			<li>
+				<button id="settings" class="button" onclick="toggle_show()">
+					<img src="../static/icons/settings.png" alt="dashboard icon" class="button-icon">
+					<span class="tooltiptext">Settings</span>
+				</button>
+			</li>
+			<li id="logout-button">
+				<button class="button" onclick="window.location.href='/logout'">
+					<img src="../static/icons/logout.png" alt="logout icon" class="button-icon">
+					<span class="tooltiptext">Logout</span>
+				</button>
 			</li>
 		</ul>
-	</div>
-	<div id="sidebar-container" class="w3-sidebar w3-bar-block w3-card">
-		<div id="sidebar-content" class="w3-sidebar w3-bar-block w3-card">
-			<div id="marker-list"></div>
-		</div>
+		<ul id="content-fields" class="vertical-fields">
+			<li id="close-button-container">
+				<button id="close-button" class="button" onclick="toggle_hide()">
+					<img src="../static/icons/close.png" alt="dashboard icon" class="button-icon">
+				</button>
+			</li>
+			<li id="dashboard-content">
+				<h3>DASHBOARD</h3>
+				<button id="last-position-button" class="button" onclick="goToLastPosition()">Last Position</button>
+				<div id="sidebar-container" class="w3-bar-block">
+					<h4>Location logs</h4>
+					<div id="sidebar-content" class="w3-bar-block">
+						<div id="marker-list"></div>
+					</div>
+				</div>
+			</li>
+			<li id="safezone-content">
+				<h3>SAFE ZONE</h3>
+				<form>
+					<p><label for="lat">Latitude</label></p>
+					<p><input name="lat" type="number" step="any" min="-90" max="90" placeholder="Input Latitude" id="lat-textbox" onkeyup="checkNum(event)" autofocus></p>
+					<p><label for="lon">Longtitude</label></p>
+					<p><input name="lon" type="number" step="any" min="-180" max="180" placeholder="Input Longtitude" id="lon-textbox" onkeyup="checkNum(event)" autofocus></p>
+					<div class="slidecontainer">
+						<label for="safeRange">Safezone Radius (metres)</label>
+						<input name="safeRange" type="range" min="5" max="5000" class="slider" id="saferange">
+						<input name="safeRangeText" type="number" min="5" max="5000" class="radius-text" id="saferange-text" onkeyup="checkNum(event)">
+						<p>Value: <span id="display-radius"></span></p>
+					</div>
+					<button class="button" onclick="safezoneReset()" id="reset-button">Reset</button>
+					<input type="submit" class="button" id="safezone-submit" value="Save">
+				</form>
+			</li>
+			<li id="dangerzone-content">
+				<h3>DANGERZONE</h3>
+			</li>
+			<li id="settings-content">
+				<h3>SETTINGS</h3>
+			<li>
+		</ul>
 	</div>
 
+	
 	<div id="map" class="w3-container"></div>
 
 	<script>
+		// Variables
+		const element = document.getElementById("sidebar-container");
 		var map = L.map('map').fitWorld();
-
-		var sidebar_open = false;
-
 		var index = 0;
 		var markers = []
-		// Store existing markers
 		var leafletMarkers = []
-
-		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			maxZoom: 19,
-			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-
-		}).addTo(map);
-
-		map.setZoom(2.5);
-
-		function toggle() {
-			const element = document.getElementById("sidebar-container");
-
-			if (!sidebar_open) {
-				element.classList.remove("sidebar-container-out");
-				element.classList.add("sidebar-container-in");
-			}
-			else {
-				element.classList.remove("sidebar-container-in");
-				element.classList.add("sidebar-container-out");
-			}
-
-			sidebar_open = !sidebar_open;
+		var buttons = document.querySelectorAll('#menus li:not(#logout-button) button');
+		var tab_buttons = ["dashboard", "safezone", "dangerzone", "settings"];
+		var reset = document.getElementById("reset-button")
+		var slider = document.getElementById("saferange");
+		var output = document.getElementById("display-radius");
+		var textBox = document.getElementById("saferange-text");
+		var latText = document.getElementById("lat-textbox");
+		var longText = document.getElementById("lon-textbox")
+		var slider = document.getElementById("saferange")
+	
+		function toggle_show() {
+			document.getElementById("content-fields").style.width = "250px";
 		}
-
+	
+		function toggle_hide() {
+			document.getElementById("content-fields").style.width = "0";
+		}
+	
 		function goToLastPosition() {
 			const marker = markers[markers.length - 1];
 			map.flyTo(new L.latLng(marker.lat, marker.lon), 15);
 		}
-
+	
 		function zoomToPosition(event) {
 			const marker = markers[event.target.marker_index];
 			map.flyTo(new L.latLng(marker.lat, marker.lon), 15);
 		}
+		
+		// Change the tab upon clicking
+		function change_content(chosen_button) {
+			tab_buttons.forEach(function(button) {
+				document.getElementById(button + "-content").style.display = "none";
+			});
+			document.getElementById(chosen_button + "-content").style.display = "block";
+		}
+		
+		function checkNum(event) {
+			var textBox = event.currentTarget;
+			var value = parseInt(textBox.value, 10);
+			var max = parseInt(textBox.max, 10);
+			var min = parseInt(textBox.min, 10);
+			if (value < min) {
+				textBox.value = min;
+			} 
+			else if (value > max) {
+				textBox.value = max;
+			}
+			output.innerHTML = slider.value;
+		}
+
+		function safezoneUpdate(event) {
+			var newLat = latText.value;
+			var newLon = longText.value;
+			var newRadius = textBox.value;
+
+			safezone_circle.setLatLng([newLat, newLon]);
+			safezone_circle.setRadius(newRadius);
+		}
+
+		// TODO: replace with data from client's database
+		function safezoneReset() {
+			var reLat = latText.value = '11.1';
+			var reLon = longText.value = '106.61';
+			var reRadText = textBox.value = '100';
+			var reRadSlider = slider.value = '100';
+			safezone_circle.setLatLng([reLat, reLon]);
+			safezone_circle.setRadius(reRadText);
+			event.preventDefault();
+		}
+
+		function safezoneMapClick(event) {
+			if (document.getElementById("safezone-content").style.display == "block") {
+				latText.value = event.latlng.lat;
+				longText.value = event.latlng.lng;
+				safezone_circle.setLatLng([latText.value, longText.value]);
+				safezone_circle.setRadius(textBox.value);
+				event.preventDefault();
+			}
+		}
 
 		function update() {
-
 			var data = $.get("/data", data = { "index": index });
-
 			data.done(function (data) {
-
 				try {
 					const new_markers = JSON.parse(data);
-
 					index += new_markers.length
-
 					for (var i = 0; i < new_markers.length; i++) {
 						const marker = new_markers[i];
 						const matches = marker.time.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
-
-						// Date is given in UTC+0, so we let JS handle the timezone
 						const date = new Date(`${+matches[3]}/${+matches[2]}/${+matches[1]} ${+matches[4]}:${+matches[5]}:${+matches[6]}+00:00`);
-						
+
 						console.log("Adding marker at %f, %f for time %s", marker.lat, marker.lon, date.toLocaleString());
+
 						markers.push(marker);
-
-						var leafletMarker = L.marker([marker.lat, marker.lon]).addTo(map).bindPopup(`${marker.index}: ${date.toLocaleString()}`)
-						
-						// Add the marker to the array 
-
+						var leafletMarker = L.marker([marker.lat, marker.lon]).addTo(map).bindPopup(`${marker.lat}\r\n${marker.lon}`)
 						leafletMarkers.push(leafletMarker);
 
-						// Add clickable marker log
 						let element = document.createElement("button")
 						element.className = "w3-bar-item w3-button";
 						element.id = "entry";
-						element.textContent = `${marker.lat}N, ${marker.lon}E\r\n`
-						element.textContent += `${date.toLocaleString()}`
-						element.style = "font-size: 14px;";
+						element.textContent = `${marker.lat}N,\r\n${marker.lon}E\r\n${date.toLocaleString()}`
+						element.style = "font-size: 14px; color: white;";
 						element.marker_index = marker.index;
 						element.addEventListener("click", zoomToPosition)
-
 						document.getElementById("marker-list").prepend(element);
 
 						if (i == new_markers.length - 1) {
 							map.flyTo(new L.latLng(marker.lat, marker.lon));
 						} 
 					}
-
 					while (leafletMarkers.length > 1) {
 						var markerToRemove = leafletMarkers.shift();
 						map.removeLayer(markerToRemove);
 					}
 				}
-
 				catch (err) {
 					if (data != "No new entries") {
 						console.log("Failed to parse marker data: %s. Error: %s", data, err);
@@ -151,11 +230,62 @@
 				}
 			});
 		}
+	
+		// Initial setup
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			minZoom: 2,			
+			maxZoom: 19,
+			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+		}).addTo(map);
 
-		// Do initial update and then request data on an interval
+		//TODO: Set to the client's saved data
+		var safezone_circle = L.circle([11.1, 106.61], {radius: 2500}).addTo(map);
+		latText.value = 11.1;
+		longText.value = 106.61;
+		slider.value = 2500;
+		textBox.value = 2500;
+
+		map.attributionControl.setPosition('bottomleft');
+
+		map.setZoom(2.5);
+		
+		// This for tab changes
+		tab_buttons.forEach(function(button) {
+			document.getElementById(button + "-content").style.display = "none";
+		});
+
+		tab_buttons.forEach(function(button) {
+			document.getElementById(button).addEventListener('click', function(event) {
+				change_content(event.currentTarget.id);
+			});
+		});
+
+		// Add multiple types of event handlers to elements'EventListener
+		function addEvents(elements, events, handler) {
+			elements.forEach(element => {
+				events.forEach(event => {
+					element.addEventListener(event, handler);
+				});
+			});
+		}
+		var elements = [latText, longText, textBox, slider];
+		var events = ['keyup', 'mouseup'];
+		addEvents(elements, events, function(event) { safezoneUpdate(event) });
+
+		map.on('click', safezoneMapClick);
+
+		// Radius slider and textbox
+		output.innerHTML = slider.value;
+		slider.oninput = function() {
+			output.innerHTML = this.value;
+			textBox.value = this.value;
+		}
+		textBox.oninput = function() {
+			slider.value = this.value;
+			output.innerHTML = this.value;
+		}
 		update();
 		setInterval(update, 20000);
-
 	</script>
 </body>
 

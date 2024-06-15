@@ -1,0 +1,77 @@
+
+.background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('mapthings.jpg') center center/contain;
+      /* Add blur effect to background */
+    z-index: -1;
+  }
+  
+  .rounded-rectangle {
+    position: absolute;
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    width: 30%;
+    height: 50%;  
+    margin: 0 auto;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ensure content stays within bounds */
+    z-index: 0;
+  }
+  
+  .rounded-rectangle::before {
+    content: "";
+    margin: 0 auto;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-color: black;
+    background: url('white.jpg') no-repeat center center/cover;
+    filter: blur(20px); /* Blur the background image */
+    z-index: -1; /* Ensure it's behind content */
+  }
+  
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* This will cover the full height of the viewport */
+}
+  .login {
+    position: absolute;
+    margin: auto;
+    z-index: 1; /* Ensure this is above the blurred background */
+    color: black;
+    font-weight: bold;
+    text-align: left;
+  }
+
+  .login form p input {
+    width: 100%; 
+    box-sizing: inherit; 
+}
+
+.title_login {
+    font-size: 40px;
+    font-weight: bold;
+    text-align: center;
+    color: black;
+    z-index: 1
+}
+.form {
+    display: flex; /* Add this */
+    flex-direction: column; /* Add this */
+    justify-content: center; /* Add this */
+    align-items: center; /* Add this */
+    margin-top: 20px;
+}
+
+#content {
+    width: 100%;
+}

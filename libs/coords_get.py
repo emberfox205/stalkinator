@@ -5,7 +5,7 @@ from iot_api_client.configuration import Configuration
 import  iot_api_client.apis.tags.properties_v2_api as PropertyV2
 from dotenv import load_dotenv
 import os, requests 
-from oath_token_get import oauth_token_get
+from libs.oauth_token_get import oauth_token_get
 from datetime import datetime 
 
 def coords_get(access_token, url):

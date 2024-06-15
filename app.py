@@ -5,9 +5,9 @@ import json
 from os import path, stat
 import socket, atexit, time
 from datetime import timedelta , datetime
+import sqlite3, json
 
 
-DATAFILE = "data.json"
 markers = []
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///stalkinator.db'
@@ -37,12 +37,14 @@ def login():
     
         session.permanent = True
         session["email"] = email
-        
         found_user = User.query.filter_by(email = email).first()
-
+        
+        
         if found_user:
             
             if password == found_user.password:
+                thing_id = User.query.filter_by(email = email).first().tid
+                session['thing_id'] = thing_id
                 return redirect(url_for('dashboard'))
             else:
                 flash("Please type the correct PASSWORD !")
@@ -71,7 +73,7 @@ def register():
         email = request.form["email"]
         password = request.form["password"]
         thing_id = request.form["tid"]
-
+        
         found_user = User.query.filter_by(email = email).first()
         if found_user:
             flash(" ACCOUNT EXISTED, PLEASE LOG IN!")
@@ -91,6 +93,7 @@ def register():
 @app.route('/logout')
 def logout():
     session.pop("email", None)
+    session.pop("thing_id", None)
     return redirect(url_for('login'))
 
 @app.route('/dashboard')
@@ -112,33 +115,40 @@ def data():
         except:
             return "Error decoding JSON"
 
-        if "lat" in json_data and "lon" in json_data and "time" in json_data:
+        """if "lat" in json_data and "lon" in json_data and "time" in json_data and "thing_id" in json_data:
             markers.append({
                 "lat": json_data["lat"],
                 "lon": json_data["lon"],
                 "time": json_data["time"],
-                "index": len(markers)
+                "thing_id": json_data["thing_id"]	
             })
             with open("data.json", "w") as file:
                 json.dump(markers, file)
+                
         else:
             return "Invalid data sent"
+            """
+        
     # This handles periodical requests from Front-end to display the saved coords
     elif request.method == "GET":
+        connect = sqlite3.connect("instance/stalkinator.db")
+        connect.row_factory = sqlite3.Row  # Set the row_factory to sqlite3.Row
 
-        if "index" in request.args:
-            index = int(
-                request.args["index"]) if request.args["index"]. isdigit() else None
-
-            if index < 0 or index == None:
-                return "Invalid index"
-            elif index >= len(markers):
-                return "No new entries"
-            else:
-                # Send a list of new markers to the Front-end
-                return json.dumps(markers[index:])
-        else:
-            return "No index present"
+        cur = connect.cursor()
+        # Execute a query
+        cur.execute("""CREATE TABLE IF NOT EXISTS Makers (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, time string, thing_id) """)
+        cur.execute(f"SELECT lon, lat, time FROM Makers WHERE thing_id = '{session['thing_id']}' order by time desc LIMIT 20")
+        # Fetch all rows as dictionaries
+        rows = cur.fetchall()
+        markers = []
+        for i, row in enumerate(rows):
+            row = dict(row)
+            row["index"] = i
+            markers.append(row)
+        
+        hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
+        print(hahaha)
+        return json.dumps(hahaha)
 
     else:
         return "Method not supported"
@@ -146,16 +156,7 @@ def data():
     return "OK\n"
 
 
-if __name__ == "__main__":
-
-    if not path.isfile(DATAFILE):
-        # Create the file
-        open(DATAFILE, "x")
-
-    with open("data.json", "r") as file:
-        if stat(DATAFILE).st_size != 0:
-            markers = json.load(file)
-            
+if __name__ == "__main__":          
     with app.app_context():
         db.create_all()
     app.run(host="0.0.0.0", port=8080, debug=True)

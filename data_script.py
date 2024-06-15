@@ -4,7 +4,6 @@ import time, socket
 import threading
 import sqlite3
 
-
 latest_token = None
 def update_token():
     global latest_token
@@ -15,7 +14,6 @@ def update_token():
         time.sleep(250)
 
 def get_coords():
-    
     while True:
         connect = sqlite3.connect("instance/stalkinator.db")
         cur = connect.cursor()

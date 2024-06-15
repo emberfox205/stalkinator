@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 import os, requests 
 from libs.oauth_token_get import oauth_token_get
 from datetime import datetime 
+import sqlite3
 
-def coords_get(access_token, url):
-    load_dotenv()
-    THING_ID = os.getenv('THING_ID')
+
+def coords_get(access_token, thing_id, cur, connect):
     
     # configure and instance the API client
     client_config = Configuration(host="https://api2.arduino.cc/iot")
@@ -21,7 +21,7 @@ def coords_get(access_token, url):
 
     # example passing only required values which don't have defaults set
     path_params = {
-        'id': THING_ID,
+        'id': thing_id,
     }
     query_params = {
     }
@@ -40,13 +40,17 @@ def coords_get(access_token, url):
     else:
         GPS = dict(dict(api_response.body[-1])['last_value'])
         now = datetime.now()
-        data = {
-            "lat": str(GPS['lat']),
-            "lon": str(GPS['lon']),
-            "time": str(now.strftime("%m/%d/%Y %H:%M:%S")),
-        }
-        requests.post(url, json=data)
+        
+        values = [float(GPS['lat']),float(GPS['lon']),str(now.strftime("%m/%d/%Y %H:%M:%S")),str(thing_id)]
 
+        cur.execute("""CREATE TABLE IF NOT EXISTS Makers (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, time string, thing_id) """)
+        connect.commit()
+        
+        cur.execute("INSERT INTO Makers (lat, lon, time, thing_id) VALUES (?,?,?,?)",values)
+        connect.commit()
+
+        
+    	
 if __name__ == "__main__":
     access_token = oauth_token_get()
     coords_get(access_token=access_token)

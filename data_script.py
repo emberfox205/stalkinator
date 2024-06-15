@@ -2,6 +2,7 @@ from libs.oauth_token_get import oauth_token_get
 from libs.coords_get import coords_get
 import time, socket
 from multiprocessing import Process, Manager
+import sqlite3
 
 manager = Manager()
 latest_token = manager.Value('d', None)  # 'd' is the typecode for strings in this context
@@ -14,10 +15,16 @@ def update_token(shared_token):
         time.sleep(250)
 
 def get_coords(shared_token):
+    
     while True:
+        connect = sqlite3.connect("instance/stalkinator.db")
+        cur = connect.cursor()
         ipv4_address = socket.gethostbyname(socket.gethostname())
-        #print("coord: ",shared_token.value)
-        coords_get(access_token=shared_token.value, url=f"http://{ipv4_address}:8080/data")
+        cur.execute("Select tid from user")
+        connect.commit()
+        values = set([row[0] for row in cur.fetchall()])
+        for value in values:
+            coords_get(access_token=shared_token.value, cur = cur, connect = connect ,thing_id = value)
         time.sleep(10)
 
 if __name__ == "__main__":

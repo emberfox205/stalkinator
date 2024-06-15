@@ -2,23 +2,26 @@ from libs.oauth_token_get import oauth_token_get
 from libs.coords_get import coords_get
 import time, socket
 import threading
+import sqlite3
 
 latest_token = None
-
 def update_token():
     global latest_token
     while True:
         # Update the shared token value
         latest_token = oauth_token_get()
-        #print(latest_token)
+        #print(shared_token.value)
         time.sleep(250)
 
 def get_coords():
-    global latest_token
     while True:
-        ipv4_address = socket.gethostbyname(socket.gethostname())
-        #print("coord: ",latest_token)
-        coords_get(access_token=latest_token, url=f"http://{ipv4_address}:8080/data")
+        connect = sqlite3.connect("instance/stalkinator.db")
+        cur = connect.cursor()
+        cur.execute("Select tid from user")
+        connect.commit()
+        values = set([row[0] for row in cur.fetchall()])
+        for value in values:
+            coords_get(access_token=latest_token, cur = cur, connect = connect ,thing_id = value)
         time.sleep(10)
 
 if __name__ == "__main__":

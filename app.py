@@ -6,6 +6,7 @@ from os import path, stat
 import socket, atexit, time
 from datetime import timedelta , datetime
 import sqlite3, json
+import subprocess
 
 
 markers = []
@@ -28,6 +29,14 @@ class User(db.Model):
         self.tid = tid
         self.password = password
 
+def getdb(thing_id):
+    conn = sqlite3.connect("instance/stalkinator.db")
+    cur = conn.cursor()
+    cur.execute("SELECT name, lat, lon FROM geofence WHERE thing_id = ?", (thing_id,))
+    geofences = cur.fetchall()
+    conn.close()
+    return geofences
+
 @app.route("/" , methods = ["POST", "GET"])
 @app.route("/login" , methods = ["POST", "GET"])
 def login():
@@ -45,6 +54,7 @@ def login():
             if password == found_user.password:
                 thing_id = User.query.filter_by(email = email).first().tid
                 session['thing_id'] = thing_id
+                subprocess.run(["python", "libs/get_places.py", thing_id])
                 return redirect(url_for('dashboard'))
             else:
                 flash("Please type the correct PASSWORD !")
@@ -99,7 +109,9 @@ def logout():
 @app.route('/dashboard')
 def dashboard():
     if "email" in session:
-        return render_template("index.html", markers=markers)
+        thing_id = session.get('thing_id')
+        geofences = getdb(thing_id)
+        return render_template("index.html", geofences=geofences)
     else:
         return redirect(url_for("login"))
 
@@ -114,20 +126,6 @@ def data():
             json_data = json.loads(request.data.decode("utf8"))
         except:
             return "Error decoding JSON"
-
-        """if "lat" in json_data and "lon" in json_data and "time" in json_data and "thing_id" in json_data:
-            markers.append({
-                "lat": json_data["lat"],
-                "lon": json_data["lon"],
-                "time": json_data["time"],
-                "thing_id": json_data["thing_id"]	
-            })
-            with open("data.json", "w") as file:
-                json.dump(markers, file)
-                
-        else:
-            return "Invalid data sent"
-            """
         
     # This handles periodical requests from Front-end to display the saved coords
     elif request.method == "GET":
@@ -154,7 +152,6 @@ def data():
         return "Method not supported"
 
     return "OK\n"
-
 
 if __name__ == "__main__":          
     with app.app_context():

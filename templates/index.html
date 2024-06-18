@@ -20,6 +20,7 @@
 	<script src="../static/js/leaflet.geometryutil.js"></script>
 	<script src="../static/js/leaflet-arrowheads.js"></script>
 	<script src="https://code.jquery.com/jquery-3.4.1.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 
 <body>
@@ -74,7 +75,7 @@
 			</li>
 			<li id="safezone-content">
 				<h3>SAFE ZONE</h3>
-				<form action="/data", method="post">
+				<form action="/data", method="post" id="sfZ-form">
 					<p><label for="lat">Latitude</label></p>
 					<p><input name="lat" type="number" step="any" min="-90" max="90" placeholder="Input Latitude" id="lat-textbox" onkeyup="checkNum(event)" autofocus></p>
 					<p><label for="lon">Longtitude</label></p>
@@ -285,6 +286,28 @@
 		addEvents(elements, events, function(event) { safezoneUpdate(event) });
 
 		map.on('click', safezoneMapClick);
+
+
+		// Submit Safezone form w/o redirection 
+		$(document).ready(function(){
+			$('sfZ-form').on('submit', function(event) {
+				event.preventDefault(); // prevent the form from submitting normally
+		
+				$.ajax({
+					url: $(this).attr('action'), // the URL from the form action attribute
+					type: $(this).attr('method'), // the method from the form method attribute
+					data: $(this).serialize(), // serialize the form data
+					success: function(response) {
+						// handle the response from the server
+						console.log(response);
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+						// handle any errors
+						console.error(textStatus, errorThrown);
+					}
+				});
+			});
+		});
 
 		// Radius slider and textbox
 		output.innerHTML = slider.value;

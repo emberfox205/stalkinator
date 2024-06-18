@@ -74,7 +74,7 @@
 			</li>
 			<li id="safezone-content">
 				<h3>SAFE ZONE</h3>
-				<form>
+				<form action="/data", method="post">
 					<p><label for="lat">Latitude</label></p>
 					<p><input name="lat" type="number" step="any" min="-90" max="90" placeholder="Input Latitude" id="lat-textbox" onkeyup="checkNum(event)" autofocus></p>
 					<p><label for="lon">Longtitude</label></p>
@@ -91,9 +91,17 @@
 			</li>
 			<li id="dangerzone-content">
 				<h3>DANGERZONE</h3>
+				<form>
+					<p><input type="checkbox" name="bars-n-clubs" id="bars-n-clubs"> Bars & Clubs</p>
+				</form>
 			</li>
 			<li id="settings-content">
 				<h3>SETTINGS</h3>
+				<form>
+					<p><label for="tid_reset">Reset Thing ID</label></p>
+					<p><input name="tid_reset" placeholder="Input New Thing ID" id="reset-thing-id" autofocus></p>
+					<input type="submit" class="button" id="safezone-submit" value="Save">
+				</form>				
 			<li>
 		</ul>
 	</div>
@@ -188,6 +196,10 @@
 			}
 		}
 
+		function getSafezone() {
+			var sfz = $.get("/data");
+		}
+
 		function update() {
 			var data = $.get("/data", data = { "index": index });
 			data.done(function (data) {
@@ -197,7 +209,7 @@
 					for (var i = 0; i < new_markers.length; i++) {
 						const marker = new_markers[i];
 						const matches = marker.time.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
-						const date = new Date(`${+matches[3]}/${+matches[2]}/${+matches[1]} ${+matches[4]}:${+matches[5]}:${+matches[6]}+00:00`);
+						const date = new Date(`${+matches[1]}/${+matches[2]}/${+matches[3]} ${+matches[4]}:${+matches[5]}:${+matches[6]}+07:00`);
 
 						console.log("Adding marker at %f, %f for time %s", marker.lat, marker.lon, date.toLocaleString());
 

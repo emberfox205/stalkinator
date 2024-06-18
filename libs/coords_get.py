@@ -41,7 +41,7 @@ def coords_get(access_token, thing_id, cur, connect):
         GPS = dict(dict(api_response.body[-1])['last_value'])
         now = datetime.now()
         
-        values = [float(GPS['lat']),float(GPS['lon']),str(now.strftime("%m/%d/%Y %H:%M:%S")),str(thing_id)]
+        values = [float(GPS['lat']),float(GPS['lon']),str(now.strftime("%d/%m/%Y %H:%M:%S")),str(thing_id)]
 
         cur.execute("""CREATE TABLE IF NOT EXISTS Makers (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, time string, thing_id) """)
         connect.commit()

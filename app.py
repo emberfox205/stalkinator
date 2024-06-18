@@ -112,7 +112,7 @@ def data():
     cur = connect.cursor()
     
     # This handles requests from get_coords() to send new coords to be marked
-    if request.method == "POST":
+    if request.method == "POST" and all(isinstance(float(request.form.get(key)), float) for key in ["lat", "lon", "safeRange"]):
         
         try:
             lat = request.form.get("lat")	

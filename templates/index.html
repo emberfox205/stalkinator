@@ -92,9 +92,14 @@
 			</li>
 			<li id="dangerzone-content">
 				<h3>DANGERZONE</h3>
-				{% for geofence in geofences %}
-            		<ul>Name: {{ geofence[0] }}, Lat: {{ geofence[1] }}, Lon: {{ geofence[2] }}</ul>
-        		{% endfor %}
+					<form>
+						<p><input type="checkbox" name="bars-n-clubs" id="bars-n-clubs" onchange="toggleGeofences()" checked> Bars & Clubs</p>
+					</form>
+					<div id="geofence-list" class="geofence-list">
+						{% for geofence in geofences %}
+							<ul>Name: {{ geofence[0] }}, Lat: {{ geofence[1] }}, Lon: {{ geofence[2] }}</ul>
+						{% endfor %}
+					</div>
 			</li>
 			<li id="settings-content">
 				<h3>SETTINGS</h3>
@@ -209,6 +214,18 @@
             return dangerGroup;
         }
 
+		function toggleGeofences() {
+			var checkbox = document.getElementById('bars-n-clubs');
+			var geofenceList = document.getElementById('geofence-list');
+			if (checkbox.checked) {
+				geofenceList.style.display = 'block';
+				dangerZones.addTo(map);
+			} else {
+				geofenceList.style.display = 'none';
+				map.removeLayer(dangerZones);
+			}
+		}
+
 		function getSafezone() {
 			var sfz = $.get("/data");
 		}
@@ -227,7 +244,7 @@
 						console.log("Adding marker at %f, %f for time %s", marker.lat, marker.lon, date.toLocaleString());
 
 						markers.push(marker);
-						var leafletMarker = L.marker([marker.lat, marker.lon]).addTo(map).bindPopup(`${marker.lat}\r\n${marker.lon}`)
+						var leafletMarker = L.marker([marker.lat, marker.lon]).addTo(map).bindPopup(`${marker.lat}\r\n${marker.lon}`);
 						leafletMarkers.push(leafletMarker);
 
 						let element = document.createElement("button")
@@ -275,20 +292,34 @@
 		map.setZoom(2.5);
 
         // Create danger zone markers
-        const dangerIcon = L.icon({
-            iconUrl: '../static/icons/danger.png',
-            iconSize: [25, 25],
-        });
+		const dangerIcon = L.icon({
+			iconUrl: '../static/icons/dangerzone.png',
+			iconSize: [34, 60],
+		});
 
-        // Add layer control to the map
-        const geofences = JSON.parse('{{ geofences|tojson }}');
-        const dangerZones = addDangerZones(map, geofences);
-        const baseLayers = {};
-        const overlays = {
-            "Danger Zones": dangerZones
-        };
+		// Create danger zone markers
+		function addDangerZones(map, geofences) {
+			const dangerGroup = L.layerGroup();
+			geofences.forEach(function (geofence) {
+				const lat = geofence[1];
+				const lon = geofence[2];
+				const marker = L.marker([lat, lon], { icon: dangerIcon }).bindPopup(`<b>Danger Zone</b><br>Name: ${geofence[0]}`);
+				dangerGroup.addLayer(marker);
+			});
+			return dangerGroup;
+		}
 
-        L.control.layers(baseLayers, overlays).addTo(map);
+		// Initialize the geofences
+		const geofences = JSON.parse('{{ geofences|tojson }}');
+		const dangerZones = addDangerZones(map, geofences);
+
+		// Add layer control to the map
+		const baseLayers = {};
+		const overlays = {
+			"Danger Zones": dangerZones
+		};
+
+		L.control.layers(baseLayers, overlays).addTo(map);
 
         // Add the danger zones layer group to the map
         dangerZones.addTo(map);

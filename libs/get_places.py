@@ -2,6 +2,7 @@ import requests
 import sqlite3
 from dotenv import load_dotenv
 import os
+import math
 
 load_dotenv()
 
@@ -35,34 +36,50 @@ def fetch_places(lat, lon):
         print(f"Error fetching data from Geoapify: {response.status_code}")
         return []
 
-def save_places_to_db(places, thing_id):
+
+def save_places_to_db(places, thing_id, user_lat, user_lon):
     conn = sqlite3.connect(DATABASE)
     cur = conn.cursor()
     
-    # Ensure the geofence table exists
-    cur.execute('''CREATE TABLE IF NOT EXISTS geofence 
-                   (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                    name TEXT, 
-                    lat REAL, 
-                    lon REAL,
-                    thing_id TEXT)''')
-    
-    # Check if data for the thing_id already exists
-    cur.execute("SELECT COUNT(*) FROM geofence WHERE thing_id = ?", (thing_id,))
-    count = cur.fetchone()[0]
-    if count > 0:
-        print(f"Data for thing_id {thing_id} already exists in the geofence table. Skipping insert.")
-    else:
-        for place in places:
-            properties = place['properties']
-            name = properties.get('name')
-            lat = properties['lat']
-            lon = properties['lon']
-            cur.execute('INSERT INTO geofence (name, lat, lon, thing_id) VALUES (?, ?, ?, ?)', 
-                        (name, lat, lon, thing_id))
+    for place in places:
+        properties = place['properties']
+        name = properties.get('name')
+        lat = properties['lat']
+        lon = properties['lon']
+        distance = haversine(user_lat, user_lon, lat, lon)
+        
+        # Check if the place already exists for the given thing_id
+        cur.execute("SELECT id FROM geofence WHERE name = ? AND lat = ? AND lon = ? AND thing_id = ?", 
+                    (name, lat, lon, thing_id))
+        row = cur.fetchone()
+        
+        if row:
+            # Update the distance if the place exists
+            cur.execute("UPDATE geofence SET distance = ? WHERE id = ?", (distance, row[0]))
+        else:
+            # Insert the new place if it doesn't exist
+            cur.execute('INSERT INTO geofence (name, lat, lon, thing_id, distance) VALUES (?, ?, ?, ?, ?)', 
+                        (name, lat, lon, thing_id, distance))
     
     conn.commit()
     conn.close()
+
+def haversine(lat1, lon1, lat2, lon2):
+    # Radius of the Earth in kilometers
+    R = 6371.0
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
+
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    
+    distance = R * c
+    return distance
 
 if __name__ == "__main__":
     import sys
@@ -76,7 +93,7 @@ if __name__ == "__main__":
     lat, lon = get_user_coords(user_thing_id)
     if lat is not None and lon is not None:
         places = fetch_places(lat, lon)
-        save_places_to_db(places, user_thing_id)
+        save_places_to_db(places, user_thing_id, lat, lon)
         print(f"Processed places for thing_id {user_thing_id}.")
     else:
         print("No coordinates found for the provided thing_id.")

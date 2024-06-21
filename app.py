@@ -31,9 +31,13 @@ class User(db.Model):
 
 def getdb(thing_id):
     conn = sqlite3.connect("instance/stalkinator.db")
-    cur = conn.cursor()
-    cur.execute("SELECT name, lat, lon FROM geofence WHERE thing_id = ?", (thing_id,))
+    cur = conn.cursor()  
+    cur.execute('''CREATE TABLE IF NOT EXISTS geofence 
+                (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, lat REAL, lon REAL, thing_id TEXT, distance REAL)''')  
+    cur.execute("SELECT name, lat, lon, distance FROM geofence WHERE thing_id = ?", (thing_id,))
     geofences = cur.fetchall()
+    thing_id = session.get('thing_id')
+    subprocess.run(["python", "libs/get_places.py", thing_id])
     conn.close()
     return geofences
 
@@ -54,7 +58,7 @@ def login():
             if password == found_user.password:
                 thing_id = User.query.filter_by(email = email).first().tid
                 session['thing_id'] = thing_id
-                subprocess.run(["python", "libs/get_places.py", thing_id])
+                
                 return redirect(url_for('dashboard'))
             else:
                 flash("Please type the correct PASSWORD !")
@@ -135,20 +139,6 @@ def data():
             connect.commit()
         except:
             return "Error decoding JSON"
-
-        """if "lat" in json_data and "lon" in json_data and "time" in json_data and "thing_id" in json_data:
-            markers.append({
-                "lat": json_data["lat"],
-                "lon": json_data["lon"],
-                "time": json_data["time"],
-                "thing_id": json_data["thing_id"]	
-            })
-            with open("data.json", "w") as file:
-                json.dump(markers, file)
-                
-        else:
-            return "Invalid data sent"
-            """
         
     # This handles periodical requests from Front-end to display the saved coords
     elif request.method == "GET":

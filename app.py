@@ -58,21 +58,21 @@ def login():
                 return redirect(url_for('dashboard'))
             else:
                 flash("Please type the correct PASSWORD !")
-                session.pop("user",None)
+                session.pop("email",None)
                 session.pop("pass", None)
                 return render_template("login.html")
         
         else:
             flash("You've not register yet")
-            session.pop("user",None)
+            session.pop("email",None)
             session.pop("pass", None)
             return render_template("login.html")
         
     
     else:
-        if "user" in session:
+        if "email" in session:
             flash("Already Logged in")
-            return redirect(url_for("home"))
+            return redirect(url_for("dashboard"))
         
         
         return render_template('login.html')
@@ -87,7 +87,7 @@ def register():
         found_user = User.query.filter_by(email = email).first()
         if found_user:
             flash(" ACCOUNT EXISTED, PLEASE LOG IN!")
-            session.pop("user",None)
+            session.pop("email",None)
             session.pop("pass", None)
             return redirect(url_for("login"))
 
@@ -118,21 +118,41 @@ def dashboard():
 
 @app.route("/data", methods=["POST", "GET"])
 def data():
+    connect = sqlite3.connect("instance/stalkinator.db")
+    connect.row_factory = sqlite3.Row  # Set the row_factory to sqlite3.Row
+    cur = connect.cursor()
+    
     # This handles requests from get_coords() to send new coords to be marked
-    if request.method == "POST":
-        json_data = {}
-
+    if request.method == "POST" and all(isinstance(float(request.form.get(key)), float) for key in ["lat", "lon", "safeRange"]):
+        
         try:
-            json_data = json.loads(request.data.decode("utf8"))
+            lat = request.form.get("lat")	
+            lon = request.form.get("lon")
+            safeRange = request.form.get("safeRange")
+            values = [lat, lon, safeRange, session['email']]
+            cur.execute("""CREATE TABLE IF NOT EXISTS safeZone (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, safeRange integer, email text) """)
+            cur.execute("INSERT INTO safeZone (lat, lon, safeRange, email) VALUES (?, ?, ?, ?)", values)
+            connect.commit()
         except:
             return "Error decoding JSON"
+
+        """if "lat" in json_data and "lon" in json_data and "time" in json_data and "thing_id" in json_data:
+            markers.append({
+                "lat": json_data["lat"],
+                "lon": json_data["lon"],
+                "time": json_data["time"],
+                "thing_id": json_data["thing_id"]	
+            })
+            with open("data.json", "w") as file:
+                json.dump(markers, file)
+                
+        else:
+            return "Invalid data sent"
+            """
         
     # This handles periodical requests from Front-end to display the saved coords
     elif request.method == "GET":
-        connect = sqlite3.connect("instance/stalkinator.db")
-        connect.row_factory = sqlite3.Row  # Set the row_factory to sqlite3.Row
-
-        cur = connect.cursor()
+       
         # Execute a query
         cur.execute("""CREATE TABLE IF NOT EXISTS Makers (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, time string, thing_id) """)
         cur.execute(f"SELECT lon, lat, time FROM Makers WHERE thing_id = '{session['thing_id']}' order by time desc LIMIT 20")
@@ -145,7 +165,6 @@ def data():
             markers.append(row)
         
         hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
-        print(hahaha)
         return json.dumps(hahaha)
 
     else:

@@ -14,7 +14,7 @@ You may want to delete the `data.json` if you wish to start fresh.
 
 `python app.py`
 
-### HOA IS COOOL
+### HOA IS GAY
 
 ### Credit: 
 

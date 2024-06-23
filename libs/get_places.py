@@ -49,8 +49,8 @@ def save_places_to_db(places, thing_id, user_lat, user_lon):
         distance = haversine(user_lat, user_lon, lat, lon)
         
         # Check if the place already exists for the given thing_id
-        cur.execute("SELECT id FROM geofence WHERE name = ? AND lat = ? AND lon = ? AND thing_id = ?", 
-                    (name, lat, lon, thing_id))
+        cur.execute("SELECT id FROM geofence WHERE  lat = ? AND lon = ? AND thing_id = ?", 
+                    (lat, lon, thing_id))
         row = cur.fetchone()
         
         if row:
@@ -79,7 +79,7 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     
     distance = R * c
-    return distance
+    return distance * 1000
 
 if __name__ == "__main__":
     import sys

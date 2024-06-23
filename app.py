@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
-from apscheduler.schedulers.background import BackgroundScheduler
 import json
 from os import path, stat
 import socket, atexit, time
@@ -119,6 +118,19 @@ def dashboard():
     else:
         return redirect(url_for("login"))
 
+def distance(connect, cur, marker):
+    cur.execute("SELECT lat, lon, safeRange FROM safeZone WHERE email = ? order by ID DESC Limit 1", (session['email'],))
+    safeZones = cur.fetchall() 
+    for safeZone in safeZones:
+        safeZone = dict(safeZone)
+        distance = ((marker['lat'] - safeZone['lat'])**2 + (marker['lon'] - safeZone['lon'] )**2)**0.5 * 100000
+
+        if distance < safeZone['safeRange']:
+            print("You are in the safe zone")
+        else:
+            print("You are not in the safe zone")
+    print(distance)
+    return distance
 
 @app.route("/data", methods=["POST", "GET"])
 def data():
@@ -134,6 +146,7 @@ def data():
             lon = request.form.get("lon")
             safeRange = request.form.get("safeRange")
             values = [lat, lon, safeRange, session['email']]
+            print(safeRange)
             cur.execute("""CREATE TABLE IF NOT EXISTS safeZone (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, safeRange integer, email text) """)
             cur.execute("INSERT INTO safeZone (lat, lon, safeRange, email) VALUES (?, ?, ?, ?)", values)
             connect.commit()
@@ -155,6 +168,7 @@ def data():
             markers.append(row)
         
         hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
+        distance(connect, cur, markers[-1])
         return json.dumps(hahaha)
 
     else:

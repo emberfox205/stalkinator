@@ -40,10 +40,10 @@ def fetch_places(lat, lon):
 def save_places_to_db(places, thing_id, user_lat, user_lon):
     conn = sqlite3.connect(DATABASE)
     cur = conn.cursor()
-    
+
     for place in places:
         properties = place['properties']
-        name = properties.get('name')
+        name = properties.get('name') or "unknown"
         lat = properties['lat']
         lon = properties['lon']
         distance = haversine(user_lat, user_lon, lat, lon)

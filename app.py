@@ -7,6 +7,7 @@ from datetime import timedelta , datetime
 import sqlite3, json
 import subprocess
 from libs.get_places import get_user_coords, fetch_places, save_places_to_db, haversine
+from libs.alert_mailer import Mailer
 
 
 markers = []
@@ -41,9 +42,11 @@ def distance_safe(connect, cur, marker):
         print(distance, safeZone['safeRange'])
         if distance < safeZone['safeRange']:
             print(f"{session["email"]} is in the safe zone")
+            return "Safe", 1
         else:
-            print(f"{session["email"]} is not in the safe zone")        
-    return distance
+            print(f"{session["email"]} is not in the safe zone")  
+            return "Safe", 0      
+   
 
 def distance_danger(connect, cur, marker):
     
@@ -57,14 +60,14 @@ def distance_danger(connect, cur, marker):
     for dangerZone in dangerZones:
         dangerZone = dict(dangerZone)
         distance = dangerZone['distance']
-        if distance < 100:
-            dangers.append(dangerZone, distance)
+        if distance < 20:
+            dangers.append(dangerZone)
     if dangers:
         print(f"{session["email"]} is in the danger zone")
     else: 
         print(f"{session["email"]} is not in the danger zone")
                    
-    return dangers
+    return "Danger", dangers
 
 def getdb(thing_id):
     conn = sqlite3.connect("instance/stalkinator.db")
@@ -152,6 +155,7 @@ def logout():
 @app.route('/dashboard')
 def dashboard():
     if "email" in session:
+        session["flag"] = 1
         thing_id = session.get('thing_id')
         geofences = getdb(thing_id)
         return render_template("index.html", geofences=geofences)
@@ -161,6 +165,7 @@ def dashboard():
 
 @app.route("/data", methods=["POST", "GET"])
 def data():
+    
     connect = sqlite3.connect("instance/stalkinator.db")
     connect.row_factory = sqlite3.Row  # Set the row_factory to sqlite3.Row
     cur = connect.cursor()
@@ -195,8 +200,21 @@ def data():
             markers.append(row)
         
         hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
-        distance_safe(connect, cur, markers[-1])
-        print(distance_danger(connect, cur, markers[-1]))
+        mailer = Mailer()
+        if check_safe := distance_safe(connect, cur, markers[-1]):
+            if (check_safe[1] == 1 and session["flag"] == 0):
+                mailer.send(session["email"], check_safe)
+                session["flag"] = 1
+                print("sending mail")
+            elif (check_safe[1] == 0 and session["flag"] == 1):
+                mailer.send(session["email"], check_safe)
+                session["flag"] = 0
+                print("sending mail")
+        
+        if check_danger := distance_danger(connect, cur, markers[-1]):    
+            if check_danger[1]: #This gonna spam the helll out of the email, but it is safe:)) realisticlly
+                mailer.send(session["email"], check_danger)
+                print("sending mail")
         return json.dumps(hahaha)
 
     else:

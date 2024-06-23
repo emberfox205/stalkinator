@@ -288,9 +288,9 @@
 		map.on('click', safezoneMapClick);
 
 
-		// Submit Safezone form w/o redirection 
+		// Submit any form w/o redirection 
 		$(document).ready(function(){
-			$('sfZ-form').on('submit', function(event) {
+			$('form').on('submit', function(event) {
 				event.preventDefault(); // prevent the form from submitting normally
 		
 				$.ajax({

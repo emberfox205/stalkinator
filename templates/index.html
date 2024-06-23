@@ -95,11 +95,6 @@
 					<form>
 						<p><input type="checkbox" name="bars-n-clubs" id="bars-n-clubs" onchange="toggleGeofences()" checked> Bars & Clubs</p>
 					</form>
-					<div id="geofence-list" class="geofence-list">
-						{% for geofence in geofences %}
-							<ul>Name: {{ geofence[0] }}, Lat: {{ geofence[1] }}, Lon: {{ geofence[2] }}</ul>
-						{% endfor %}
-					</div>
 			</li>
 			<li id="settings-content">
 				<h3>SETTINGS</h3>
@@ -216,12 +211,9 @@
 
 		function toggleGeofences() {
 			var checkbox = document.getElementById('bars-n-clubs');
-			var geofenceList = document.getElementById('geofence-list');
 			if (checkbox.checked) {
-				geofenceList.style.display = 'block';
 				dangerZones.addTo(map);
 			} else {
-				geofenceList.style.display = 'none';
 				map.removeLayer(dangerZones);
 			}
 		}

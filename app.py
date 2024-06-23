@@ -6,6 +6,7 @@ import socket, atexit, time
 from datetime import timedelta , datetime
 import sqlite3, json
 import subprocess
+from libs.get_places import get_user_coords, fetch_places, save_places_to_db, haversine
 
 
 markers = []
@@ -28,6 +29,43 @@ class User(db.Model):
         self.tid = tid
         self.password = password
 
+def distance_safe(connect, cur, marker):
+    cur.execute("SELECT lat, lon, safeRange FROM safeZone WHERE email = ? order by ID DESC Limit 1", (session['email'],))
+    safeZones = cur.fetchall() 
+    if not safeZones:   
+        print(f"{session["email"]} does not have a safe zone set up.")
+        return None
+    for safeZone in safeZones:
+        safeZone = dict(safeZone)
+        distance = haversine(marker['lat'], marker['lon'], safeZone['lat'], safeZone['lon'])
+        print(distance, safeZone['safeRange'])
+        if distance < safeZone['safeRange']:
+            print(f"{session["email"]} is in the safe zone")
+        else:
+            print(f"{session["email"]} is not in the safe zone")        
+    return distance
+
+def distance_danger(connect, cur, marker):
+    
+    cur.execute("SELECT name, lat, lon, distance FROM geofence WHERE thing_id = ?", (session['thing_id'],))
+    dangerZones = cur.fetchall()
+    #print("DANGER", [dict(i) for i in dangerZones]) 
+    if not dangerZones:   
+        print(f"{session["email"]} does not have dangerZone yet reload.")
+        return None
+    dangers = [] 
+    for dangerZone in dangerZones:
+        dangerZone = dict(dangerZone)
+        distance = dangerZone['distance']
+        if distance < 100:
+            dangers.append(dangerZone, distance)
+    if dangers:
+        print(f"{session["email"]} is in the danger zone")
+    else: 
+        print(f"{session["email"]} is not in the danger zone")
+                   
+    return dangers
+
 def getdb(thing_id):
     conn = sqlite3.connect("instance/stalkinator.db")
     cur = conn.cursor()  
@@ -35,8 +73,11 @@ def getdb(thing_id):
                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, lat REAL, lon REAL, thing_id TEXT, distance REAL)''')  
     cur.execute("SELECT name, lat, lon, distance FROM geofence WHERE thing_id = ?", (thing_id,))
     geofences = cur.fetchall()
-    thing_id = session.get('thing_id')
-    subprocess.run(["python", "libs/get_places.py", thing_id])
+    
+    lat, lon = get_user_coords(thing_id=thing_id)
+    if lat is not None and lon is not None:
+        places = fetch_places(lat, lon)
+        save_places_to_db(places, thing_id, lat, lon)
     conn.close()
     return geofences
 
@@ -50,7 +91,6 @@ def login():
         session.permanent = True
         session["email"] = email
         found_user = User.query.filter_by(email = email).first()
-        
         
         if found_user:
             
@@ -118,19 +158,6 @@ def dashboard():
     else:
         return redirect(url_for("login"))
 
-def distance(connect, cur, marker):
-    cur.execute("SELECT lat, lon, safeRange FROM safeZone WHERE email = ? order by ID DESC Limit 1", (session['email'],))
-    safeZones = cur.fetchall() 
-    for safeZone in safeZones:
-        safeZone = dict(safeZone)
-        distance = ((marker['lat'] - safeZone['lat'])**2 + (marker['lon'] - safeZone['lon'] )**2)**0.5 * 100000
-
-        if distance < safeZone['safeRange']:
-            print("You are in the safe zone")
-        else:
-            print("You are not in the safe zone")
-    print(distance)
-    return distance
 
 @app.route("/data", methods=["POST", "GET"])
 def data():
@@ -146,7 +173,7 @@ def data():
             lon = request.form.get("lon")
             safeRange = request.form.get("safeRange")
             values = [lat, lon, safeRange, session['email']]
-            print(safeRange)
+            print(f"{session["email"]}",safeRange)
             cur.execute("""CREATE TABLE IF NOT EXISTS safeZone (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, safeRange integer, email text) """)
             cur.execute("INSERT INTO safeZone (lat, lon, safeRange, email) VALUES (?, ?, ?, ?)", values)
             connect.commit()
@@ -168,7 +195,8 @@ def data():
             markers.append(row)
         
         hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
-        distance(connect, cur, markers[-1])
+        distance_safe(connect, cur, markers[-1])
+        print(distance_danger(connect, cur, markers[-1]))
         return json.dumps(hahaha)
 
     else:

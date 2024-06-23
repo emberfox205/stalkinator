@@ -92,9 +92,14 @@
 			</li>
 			<li id="dangerzone-content">
 				<h3>DANGERZONE</h3>
-				<form>
-					<p><input type="checkbox" name="bars-n-clubs" id="bars-n-clubs"> Bars & Clubs</p>
-				</form>
+					<form>
+						<p><input type="checkbox" name="bars-n-clubs" id="bars-n-clubs" onchange="toggleGeofences()" checked> Bars & Clubs</p>
+					</form>
+					<div id="geofence-list" class="geofence-list">
+						{% for geofence in geofences %}
+							<ul>Name: {{ geofence[0] }}, Lat: {{ geofence[1] }}, Lon: {{ geofence[2] }}</ul>
+						{% endfor %}
+					</div>
 			</li>
 			<li id="settings-content">
 				<h3>SETTINGS</h3>
@@ -117,6 +122,7 @@
 		var index = 0;
 		var markers = []
 		var leafletMarkers = []
+		var dangerMarkers = []
 		var buttons = document.querySelectorAll('#menus li:not(#logout-button) button');
 		var tab_buttons = ["dashboard", "safezone", "dangerzone", "settings"];
 		var reset = document.getElementById("reset-button")
@@ -124,8 +130,8 @@
 		var output = document.getElementById("display-radius");
 		var textBox = document.getElementById("saferange-text");
 		var latText = document.getElementById("lat-textbox");
-		var longText = document.getElementById("lon-textbox")
-		var slider = document.getElementById("saferange")
+		var longText = document.getElementById("lon-textbox");
+		var slider = document.getElementById("saferange");
 	
 		function toggle_show() {
 			document.getElementById("content-fields").style.width = "250px";
@@ -197,6 +203,29 @@
 			}
 		}
 
+		function addDangerZones(map, geofences) {
+            const dangerGroup = L.layerGroup();
+            geofences.forEach(function (geofence) {
+                const lat = geofence[1];
+                const lon = geofence[2];
+                const marker = L.marker([lat, lon], { icon: dangerIcon }).bindPopup(`<b>Danger Zone</b><br>Name: ${geofence[0]}`);
+                dangerGroup.addLayer(marker);
+            });
+            return dangerGroup;
+        }
+
+		function toggleGeofences() {
+			var checkbox = document.getElementById('bars-n-clubs');
+			var geofenceList = document.getElementById('geofence-list');
+			if (checkbox.checked) {
+				geofenceList.style.display = 'block';
+				dangerZones.addTo(map);
+			} else {
+				geofenceList.style.display = 'none';
+				map.removeLayer(dangerZones);
+			}
+		}
+
 		function getSafezone() {
 			var sfz = $.get("/data");
 		}
@@ -215,7 +244,7 @@
 						console.log("Adding marker at %f, %f for time %s", marker.lat, marker.lon, date.toLocaleString());
 
 						markers.push(marker);
-						var leafletMarker = L.marker([marker.lat, marker.lon]).addTo(map).bindPopup(`${marker.lat}\r\n${marker.lon}`)
+						var leafletMarker = L.marker([marker.lat, marker.lon]).addTo(map).bindPopup(`${marker.lat}\r\n${marker.lon}`);
 						leafletMarkers.push(leafletMarker);
 
 						let element = document.createElement("button")
@@ -261,6 +290,39 @@
 		map.attributionControl.setPosition('bottomleft');
 
 		map.setZoom(2.5);
+
+        // Create danger zone markers
+		const dangerIcon = L.icon({
+			iconUrl: '../static/icons/dangerzone.png',
+			iconSize: [34, 60],
+		});
+
+		// Create danger zone markers
+		function addDangerZones(map, geofences) {
+			const dangerGroup = L.layerGroup();
+			geofences.forEach(function (geofence) {
+				const lat = geofence[1];
+				const lon = geofence[2];
+				const marker = L.marker([lat, lon], { icon: dangerIcon }).bindPopup(`<b>Danger Zone</b><br>Name: ${geofence[0]}`);
+				dangerGroup.addLayer(marker);
+			});
+			return dangerGroup;
+		}
+
+		// Initialize the geofences
+		const geofences = JSON.parse('{{ geofences|tojson }}');
+		const dangerZones = addDangerZones(map, geofences);
+
+		// Add layer control to the map
+		const baseLayers = {};
+		const overlays = {
+			"Danger Zones": dangerZones
+		};
+
+		L.control.layers(baseLayers, overlays).addTo(map);
+
+        // Add the danger zones layer group to the map
+        dangerZones.addTo(map);
 		
 		// This for tab changes
 		tab_buttons.forEach(function(button) {
@@ -321,6 +383,7 @@
 		}
 		update();
 		setInterval(update, 20000);
+
 	</script>
 </body>
 

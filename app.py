@@ -6,6 +6,7 @@ from os import path, stat
 import socket, atexit, time
 from datetime import timedelta , datetime
 import sqlite3, json
+import subprocess
 
 
 markers = []
@@ -27,6 +28,18 @@ class User(db.Model):
         self.email = email
         self.tid = tid
         self.password = password
+
+def getdb(thing_id):
+    conn = sqlite3.connect("instance/stalkinator.db")
+    cur = conn.cursor()  
+    cur.execute('''CREATE TABLE IF NOT EXISTS geofence 
+                (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, lat REAL, lon REAL, thing_id TEXT, distance REAL)''')  
+    cur.execute("SELECT name, lat, lon, distance FROM geofence WHERE thing_id = ?", (thing_id,))
+    geofences = cur.fetchall()
+    thing_id = session.get('thing_id')
+    subprocess.run(["python", "libs/get_places.py", thing_id])
+    conn.close()
+    return geofences
 
 @app.route("/" , methods = ["POST", "GET"])
 @app.route("/login" , methods = ["POST", "GET"])
@@ -100,7 +113,9 @@ def logout():
 @app.route('/dashboard')
 def dashboard():
     if "email" in session:
-        return render_template("index.html", markers=markers)
+        thing_id = session.get('thing_id')
+        geofences = getdb(thing_id)
+        return render_template("index.html", geofences=geofences)
     else:
         return redirect(url_for("login"))
 
@@ -125,9 +140,6 @@ def data():
         except:
             return "Error decoding JSON"
         
-        
-
-        
     # This handles periodical requests from Front-end to display the saved coords
     elif request.method == "GET":
        
@@ -149,7 +161,6 @@ def data():
         return "Method not supported"
 
     return "OK\n"
-
 
 if __name__ == "__main__":          
     with app.app_context():

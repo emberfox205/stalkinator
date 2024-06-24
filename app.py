@@ -31,22 +31,27 @@ class User(db.Model):
         self.password = password
 
 def distance_safe(connect, cur, marker):
-    cur.execute("SELECT lat, lon, safeRange FROM safeZone WHERE email = ? order by ID DESC Limit 1", (session['email'],))
-    safeZones = cur.fetchall() 
-    if not safeZones:   
+    try:
+        cur.execute("SELECT lat, lon, safeRange FROM safeZone WHERE email = ? order by ID DESC Limit 1", (session['email'],))
+        safeZones = cur.fetchall() 
+        if not safeZones:   
+            print(f"{session["email"]} does not have a safe zone set up.")
+            return None
+    except sqlite3.OperationalError:
         print(f"{session["email"]} does not have a safe zone set up.")
         return None
-    for safeZone in safeZones:
-        safeZone = dict(safeZone)
-        distance = haversine(marker['lat'], marker['lon'], safeZone['lat'], safeZone['lon'])
-        print(distance, safeZone['safeRange'])
-        if distance < safeZone['safeRange']:
-            print(f"{session["email"]} is in the safe zone")
-            return "Safe", 1
-        else:
-            print(f"{session["email"]} is not in the safe zone")  
-            return "Safe", 0      
-   
+    else:
+        for safeZone in safeZones:
+            safeZone = dict(safeZone)
+            distance = haversine(marker['lat'], marker['lon'], safeZone['lat'], safeZone['lon'])
+            print(distance, safeZone['safeRange'])
+            if distance < safeZone['safeRange']:
+                print(f"{session["email"]} is in the safe zone")
+                return "Safe", 1
+            else:
+                print(f"{session["email"]} is not in the safe zone")  
+                return "Safe", 0      
+    
 
 def distance_danger(connect, cur, marker):
     
@@ -59,8 +64,9 @@ def distance_danger(connect, cur, marker):
     dangers = [] 
     for dangerZone in dangerZones:
         dangerZone = dict(dangerZone)
-        distance = dangerZone['distance']
-        if distance < 20:
+        distance =  distance = haversine(marker['lat'], marker['lon'], dangerZone['lat'], dangerZone['lon'])
+        print(distance)
+        if distance < 30:
             dangers.append(dangerZone)
     if dangers:
         print(f"{session["email"]} is in the danger zone")
@@ -201,7 +207,7 @@ def data():
         
         hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
         mailer = Mailer()
-        if check_safe := distance_safe(connect, cur, markers[-1]):
+        if check_safe := distance_safe(connect, cur, markers[0]):
             if (check_safe[1] == 1 and session["flag"] == 0):
                 mailer.send(session["email"], check_safe)
                 session["flag"] = 1

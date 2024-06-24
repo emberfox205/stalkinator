@@ -66,7 +66,7 @@ def save_places_to_db(places, thing_id, user_lat, user_lon):
 
 def haversine(lat1, lon1, lat2, lon2):
     # Radius of the Earth in kilometers
-    R = 6371.0
+    R = 6371.0087714
     lat1_rad = math.radians(lat1)
     lon1_rad = math.radians(lon1)
     lat2_rad = math.radians(lat2)

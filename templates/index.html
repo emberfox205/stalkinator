@@ -126,7 +126,10 @@
 		var textBox = document.getElementById("saferange-text");
 		var latText = document.getElementById("lat-textbox");
 		var longText = document.getElementById("lon-textbox");
-		var slider = document.getElementById("saferange");
+		var latTextserver;
+		var lonTextserver;
+		var rangeTextserver;
+		var form = document.getElementById("sfZ-form");
 	
 		function toggle_show() {
 			document.getElementById("content-fields").style.width = "250px";
@@ -177,15 +180,12 @@
 			safezone_circle.setRadius(newRadius);
 		}
 
-		// TODO: replace with data from client's database
 		function safezoneReset() {
-			var reLat = latText.value = '11.1';
-			var reLon = longText.value = '106.61';
-			var reRadText = textBox.value = '100';
-			var reRadSlider = slider.value = '100';
-			safezone_circle.setLatLng([reLat, reLon]);
-			safezone_circle.setRadius(reRadText);
-			event.preventDefault();
+			latText.value = latTextserver;
+			longText.value = lonTextserver;
+			output.innerHTML = slider.value = textBox.value = rangeTextserver;
+			safezone_circle.setLatLng([latTextserver, lonTextserver]);
+			safezone_circle.setRadius(rangeTextserver);
 		}
 
 		function safezoneMapClick(event) {
@@ -196,6 +196,21 @@
 				safezone_circle.setRadius(textBox.value);
 				event.preventDefault();
 			}
+		}
+
+		function getSafezone() {
+			var sfz = $.get("/data", {"safeZone": 1});
+			sfz.done(function (res) {
+				var res_json = JSON.parse(res);
+				latTextserver = latText.value = res_json.lat;
+				lonTextserver = longText.value = res_json.lon;
+				rangeTextserver = slider.value = res_json.safeRange;
+				textBox.value = res_json.safeRange;
+				output.innerHTML = res_json.safeRange;
+				safezoneReset();
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("Request failed: " + textStatus + ", " + errorThrown);
+			});
 		}
 
 		function addDangerZones(map, geofences) {
@@ -218,10 +233,6 @@
 			}
 		}
 
-		function getSafezone() {
-			var sfz = $.get("/data");
-		}
-
 		function update() {
 			var data = $.get("/data", data = { "index": index });
 			data.done(function (data) {
@@ -231,7 +242,7 @@
 					for (var i = 0; i < new_markers.length; i++) {
 						const marker = new_markers[i];
 						const matches = marker.time.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
-						const date = new Date(`${+matches[1]}/${+matches[2]}/${+matches[3]} ${+matches[4]}:${+matches[5]}:${+matches[6]}+07:00`);
+						const date = new Date(`${+matches[2]}/${+matches[1]}/${+matches[3]} ${+matches[4]}:${+matches[5]}:${+matches[6]}+07:00`);
 
 						console.log("Adding marker at %f, %f for time %s", marker.lat, marker.lon, date.toLocaleString());
 
@@ -271,13 +282,8 @@
 			maxZoom: 19,
 			attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 		}).addTo(map);
-
-		//TODO: Set to the client's saved data
-		var safezone_circle = L.circle([11.1, 106.61], {radius: 2500}).addTo(map);
-		latText.value = 11.1;
-		longText.value = 106.61;
-		slider.value = 2500;
-		textBox.value = 2500;
+		getSafezone();
+		var safezone_circle = L.circle([latText.value, longText.value], {radius: slider.value}).addTo(map);
 
 		map.attributionControl.setPosition('bottomleft');
 
@@ -362,9 +368,18 @@
 				});
 			});
 		});
+		
+		// Apply the new safezone data back to frontend elements 
+		document.addEventListener('DOMContentLoaded', function() {
+			form.addEventListener('submit', function(event) {
+				latTextserver = latText.value = document.getElementById('lat-textbox').value;
+				lonTextserver = longText.value = document.getElementById('lon-textbox').value;
+				rangeTextserver = slider.value = textBox.value = output.innerHTML = document.getElementById('saferange').value;
+				event.preventDefault();
+			});
+		}); 
 
 		// Radius slider and textbox
-		output.innerHTML = slider.value;
 		slider.oninput = function() {
 			output.innerHTML = this.value;
 			textBox.value = this.value;

@@ -138,7 +138,7 @@ def register():
             return redirect(url_for("login"))
 
         else:
-            flash(f'Successfully registered for {email}! Please login.')
+            flash(f'Successfully registered!')
             account = User(email, password, thing_id)
             db.session.add(account)
             db.session.commit()
@@ -170,52 +170,65 @@ def data():
     connect.row_factory = sqlite3.Row  # Set the row_factory to sqlite3.Row
     cur = connect.cursor()
     
-    # This handles requests from get_coords() to send new coords to be marked
+    # This handles requests to update safe zone
     if request.method == "POST" and all(isinstance(float(request.form.get(key)), float) for key in ["lat", "lon", "safeRange"]):
         
-        try:
+        # try:
             lat = request.form.get("lat")	
             lon = request.form.get("lon")
             safeRange = request.form.get("safeRange")
             values = [lat, lon, safeRange, session['email']]
-            print(f"{session["email"]}",safeRange)
-            cur.execute("""CREATE TABLE IF NOT EXISTS safeZone (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, safeRange integer, email text) """)
-            cur.execute("INSERT INTO safeZone (lat, lon, safeRange, email) VALUES (?, ?, ?, ?)", values)
+            print(f"{session['email']}",safeRange)
+            cur.execute("""CREATE TABLE IF NOT EXISTS safeZone (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, safeRange integer, email text UNIQUE) """)
+            cur.execute("""INSERT INTO safeZone (lat, lon, safeRange, email) VALUES (?, ?, ?, ?) ON CONFLICT (email) DO UPDATE SET lat=excluded.lat, lon=excluded.lon, safeRange=excluded.safeRange""", values)
             connect.commit()
-        except:
-            return "Error decoding JSON"
+        # except:
+        #     return "Error decoding JSON"
         
-    # This handles periodical requests from Front-end to display the saved coords
+    # This handles periodical requests from Front-end to display the saved coords, and send emails
     elif request.method == "GET":
-       
-        # Execute a query
-        cur.execute("""CREATE TABLE IF NOT EXISTS Makers (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, time string, thing_id) """)
-        cur.execute(f"SELECT lon, lat, time FROM Makers WHERE thing_id = '{session['thing_id']}' order by time desc LIMIT 20")
-        # Fetch all rows as dictionaries
-        rows = cur.fetchall()
-        markers = []
-        for i, row in enumerate(rows):
-            row = dict(row)
-            row["index"] = i
-            markers.append(row)
-        
-        hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
-        mailer = Mailer()
-        if check_safe := distance_safe(connect, cur, markers[-1]):
-            if (check_safe[1] == 1 and session["flag"] == 0):
-                mailer.send(session["email"], check_safe)
-                session["flag"] = 1
-                print("sending mail")
-            elif (check_safe[1] == 0 and session["flag"] == 1):
-                mailer.send(session["email"], check_safe)
-                session["flag"] = 0
-                print("sending mail")
-        
-        if check_danger := distance_danger(connect, cur, markers[-1]):    
-            if check_danger[1]: #This gonna spam the helll out of the email, but it is safe:)) realisticlly
-                mailer.send(session["email"], check_danger)
-                print("sending mail")
-        return json.dumps(hahaha)
+
+        if request.args.get("index"):
+            # Execute a query
+            cur.execute("""CREATE TABLE IF NOT EXISTS Makers (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, time string, thing_id) """)
+            cur.execute(f"SELECT lat, lon, time FROM Makers WHERE thing_id = '{session['thing_id']}' order by time desc LIMIT 20")
+            # Fetch all rows as dictionaries
+            rows = cur.fetchall()
+            markers = []
+            for i, row in enumerate(rows):
+                row = dict(row)
+                row["index"] = i
+                markers.append(row)
+            
+            hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
+            mailer = Mailer()
+            if check_safe := distance_safe(connect, cur, markers[-1]):
+                if (check_safe[1] == 1 and session["flag"] == 0):
+                    mailer.send(session["email"], check_safe)
+                    session["flag"] = 1
+                    print("sending mail")
+                elif (check_safe[1] == 0 and session["flag"] == 1):
+                    mailer.send(session["email"], check_safe)
+                    session["flag"] = 0
+                    print("sending mail")
+            
+            if check_danger := distance_danger(connect, cur, markers[-1]):    
+                if check_danger[1]: #This gonna spam the helll out of the email, but it is safe:)) realisticlly
+                    mailer.send(session["email"], check_danger)
+                    print("sending mail")
+            return json.dumps(hahaha)
+        if request.args.get("safeZone"):
+            cur.execute("""CREATE TABLE IF NOT EXISTS safeZone (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, safeRange integer, email text UNIQUE) """)
+            cur.execute(f"SELECT lat, lon, safeRange FROM safeZone WHERE email = '{session['email']}'")
+            sfz_raw = cur.fetchone()
+            if sfz_raw: 
+                return json.dumps({
+                    "lat": sfz_raw[0],
+                    "lon": sfz_raw[1],
+                    "safeRange": sfz_raw[2]
+                }) 
+            else:
+                return {} 
 
     else:
         return "Method not supported"

@@ -242,7 +242,13 @@
 					for (var i = 0; i < new_markers.length; i++) {
 						const marker = new_markers[i];
 						const matches = marker.time.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+):(\d+)/);
-						const date = new Date(`${+matches[2]}/${+matches[1]}/${+matches[3]} ${+matches[4]}:${+matches[5]}:${+matches[6]}+07:00`);
+						const year = +matches[3];
+						const month = +matches[2] - 1; // months are zero-based in JavaScript
+						const day = +matches[1];
+						const hour = +matches[4];
+						const minute = +matches[5];
+						const second = +matches[6];
+						const date = new Date(year, month, day, hour, minute, second);
 
 						console.log("Adding marker at %f, %f for time %s", marker.lat, marker.lon, date.toLocaleString());
 
@@ -389,7 +395,7 @@
 			output.innerHTML = this.value;
 		}
 		update();
-		setInterval(update, 20000);
+		setInterval(update, 5000);
 
 	</script>
 </body>

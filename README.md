@@ -24,10 +24,13 @@ In your local repo, set up an `.env` file with the following structure:
 
 ```
 CLIENT_ID=arduino_client_id
-CLIENT_SECRET=arduino-Secret
-GEOAPIFY_API_KEY=geoapify_api_key
+CLIENT_SECRET=arduino_secret
+GEOAPIFY_API_KEY="geoapify_api_key"
 ```
 Replace `arduino_client_id`, `arduino_secret` and `geoapify_api_key` with actual data. 
+
+> [!ATTENTION] 
+> The Geoapify key must be quoted.
 
 ## Client-side 
 
@@ -43,10 +46,12 @@ Turn the device into a Thing/Device and note the Thing ID to register on the web
 
 # Initialization
 
-Run two files: `app.py` for the server itself, and `data_script.py` for interaction with Arduino Cloud API.
+Run two files: `app.py` for the Flask server itself, and `data_script.py` for interaction with Arduino Cloud API.
 
-> [!WARNING]
-> A bug persists in the Dangerzone section which prevents Dangerzone markers to be displayed on the map. Reload a few times for them to appear. Probably will not be fixed.
+> [!WARNING] 
+> - A bug persists in the Dangerzone section which prevents Dangerzone markers to be displayed on the map. Reload a few times for them to appear. Probably will not be fixed.
+> - Dangerzone locations are hardcoded and only a few billiards locations within a fixed vicinity are fetched and interactable with the checkbox.
+> - None of the options in the Settings tab works.
 
 # Credits: 
 

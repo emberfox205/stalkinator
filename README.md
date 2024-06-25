@@ -10,11 +10,15 @@ A Flask-based webapp to monitor positions using Arduino
 
 Clone this repo: 
 
-`git clone git@github.com:emberfox205/stalkinator.git` 
+```
+git clone git@github.com:emberfox205/stalkinator.git
+```
 
 Install all the dependencies:
 
-`pip install -r requirements.txt`
+```
+pip install -r requirements.txt
+```
 
 Register an [Arduio Cloud](https://cloud.arduino.cc/) account and subscribe to at least the **Maker** tier. 
 

@@ -192,6 +192,17 @@ body {
     position: relative;
 }
 
+#dangerzone-container {
+    display: flex;
+    justify-content: center;
+}
+
+#dangerzone-types {
+    display: flex;
+    align-items: flex-start !important;
+    flex-direction: column;
+}
+
 h4 {
     color: black;
 }

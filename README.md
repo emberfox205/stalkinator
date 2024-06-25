@@ -29,7 +29,7 @@ GEOAPIFY_API_KEY="geoapify_api_key"
 ```
 Replace `arduino_client_id`, `arduino_secret` and `geoapify_api_key` with actual data. 
 
-> [!ATTENTION] 
+> [!NOTE] 
 > The Geoapify key must be quoted.
 
 ## Client-side 

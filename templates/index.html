@@ -92,13 +92,23 @@
 			</li>
 			<li id="dangerzone-content">
 				<h3>DANGERZONE</h3>
-					<form>
-						<p><input type="checkbox" name="bars-n-clubs" id="bars-n-clubs" onchange="toggleGeofences()" checked> Bars & Clubs</p>
+				<div id=dangerzone-container>
+					<form id=dangerzone-types>
+						<p><input type="checkbox" name="all-dangerzone" id="all-dangerzone"><b> All locations</b></p>
+						<p><input type="checkbox" name="demo-1"> Cafe</p>
+						<p><input type="checkbox" name="bars-n-clubs" id="bars-n-clubs" onchange="toggleGeofences()" checked> Billiards</p>
+						<p><input type="checkbox" name="demo-2"> Bars & Clubs</p>
+						<p><input type="checkbox" name="demo-3"> Accomodations</p>
 					</form>
+				</div>
 			</li>
 			<li id="settings-content">
 				<h3>SETTINGS</h3>
 				<form>
+					<p><label for="email_reset">Reset Email</label></p>
+					<p><input name="email_reset" placeholder="Input New Email" id="reset-email" autofocus></p>
+					<p><label for="pass_reset">Reset Password</label></p>
+					<p><input name="pass_reset" placeholder="Input New Password" id="reset-password" autofocus></p>
 					<p><label for="tid_reset">Reset Thing ID</label></p>
 					<p><input name="tid_reset" placeholder="Input New Thing ID" id="reset-thing-id" autofocus></p>
 					<input type="submit" class="button" id="safezone-submit" value="Save">

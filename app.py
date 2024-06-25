@@ -64,8 +64,7 @@ def distance_danger(connect, cur, marker):
     dangers = [] 
     for dangerZone in dangerZones:
         dangerZone = dict(dangerZone)
-        distance =  distance = haversine(marker['lat'], marker['lon'], dangerZone['lat'], dangerZone['lon'])
-        print(distance)
+        distance = dangerZone["distance"]
         if distance < 30:
             dangers.append(dangerZone)
     if dangers:
@@ -82,13 +81,16 @@ def getdb(thing_id):
                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, lat REAL, lon REAL, thing_id TEXT, distance REAL)''')  
     cur.execute("SELECT name, lat, lon, distance FROM geofence WHERE thing_id = ?", (thing_id,))
     geofences = cur.fetchall()
-    
-    lat, lon = get_user_coords(thing_id=thing_id)
-    if lat is not None and lon is not None:
-        places = fetch_places(lat, lon)
-        save_places_to_db(places, thing_id, lat, lon)
-    conn.close()
-    return geofences
+    try: 
+        lat, lon = get_user_coords(thing_id=thing_id)
+    except sqlite3.OperationalError:
+        return geofences
+    else:    
+        if lat is not None and lon is not None:
+            places = fetch_places(lat, lon)
+            save_places_to_db(places, thing_id, lat, lon)
+        conn.close()
+        return geofences
 
 @app.route("/" , methods = ["POST", "GET"])
 @app.route("/login" , methods = ["POST", "GET"])
@@ -197,7 +199,7 @@ def data():
         if request.args.get("index"):
             # Execute a query
             cur.execute("""CREATE TABLE IF NOT EXISTS Makers (ID INTEGER PRIMARY KEY AUTOINCREMENT, lat real, lon real, time string, thing_id) """)
-            cur.execute(f"SELECT lat, lon, time FROM Makers WHERE thing_id = '{session['thing_id']}' order by time desc LIMIT 20")
+            cur.execute(f"SELECT lat, lon, time FROM Makers WHERE thing_id = '{session['thing_id']}' order by time desc LIMIT 5")
             # Fetch all rows as dictionaries
             rows = cur.fetchall()
             markers = []
@@ -207,6 +209,9 @@ def data():
                 markers.append(row)
             
             hahaha = sorted(markers, key=lambda x: x['index'], reverse=True)
+            if not hahaha: 
+                return json.dumps(hahaha)
+            
             mailer = Mailer()
             if check_safe := distance_safe(connect, cur, markers[0]):
                 if (check_safe[1] == 1 and session["flag"] == 0):
@@ -218,7 +223,7 @@ def data():
                     session["flag"] = 0
                     print("sending mail")
             
-            if check_danger := distance_danger(connect, cur, markers[-1]):    
+            if check_danger := distance_danger(connect, cur, markers[0]):    
                 if check_danger[1]: #This gonna spam the helll out of the email, but it is safe:)) realisticlly
                     mailer.send(session["email"], check_danger)
                     print("sending mail")

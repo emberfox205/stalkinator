@@ -22,7 +22,7 @@ def get_coords():
         values = set([row[0] for row in cur.fetchall()])
         for value in values:
             coords_get(access_token=latest_token, cur = cur, connect = connect ,thing_id = value)
-        time.sleep(10)
+        time.sleep(5)
 
 if __name__ == "__main__":
     # Pass the shared latest_token to both functions

@@ -280,6 +280,18 @@
 					}
 				}
 			});
+			var geofenceData = $.get("/data", {  "geofences": 1 }); // Assuming "geofences": 1 is the parameter to request geofence data
+			geofenceData.done(function (data) {
+				try {
+					const newGeofences = data;
+					// Assuming dangerZones is a global variable holding the current geofences layer group
+					map.removeLayer(dangerZones); // Remove the current geofences from the map
+					dangerZones = addDangerZones(map, newGeofences); // Re-add the geofences with updated data
+					dangerZones.addTo(map); // Add the updated geofences layer group to the map
+				} catch (error) {
+					console.error("Error updating geofences: ", error);
+				}
+			})
 		}
 	
 		// Initial setup
@@ -315,6 +327,7 @@
 
 		// Initialize the geofences
 		const geofences = JSON.parse('{{ geofences|tojson }}');
+		console.log(geofences);
 		const dangerZones = addDangerZones(map, geofences);
 
 		// Add layer control to the map

@@ -290,7 +290,21 @@
 					}
 				}
 			});
+			var geofenceData = $.get("/data", {  "geofences": 1 }); // Assuming "geofences": 1 is the parameter to request geofence data
+			geofenceData.done(function (data) {
+				try {
+					let newGeofences = data;
+					// Assuming dangerZones is a global variable holding the current geofences layer group
+					map.removeLayer(dangerZones); // Remove the current geofences from the map
+					dangerZones = addDangerZones(map, newGeofences); // Re-add the geofences with updated data
+					dangerZones.addTo(map); // Add the updated geofences layer group to the map
+					console.log("Updated Geofences")
+				} catch (error) {
+					console.error("Error updating geofences: ", error);
+				}
+			})
 		}
+
 	
 		// Initial setup
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -313,11 +327,11 @@
 
 		// Create danger zone markers
 		function addDangerZones(map, geofences) {
-			const dangerGroup = L.layerGroup();
+			let dangerGroup = L.layerGroup();
 			geofences.forEach(function (geofence) {
-				const lat = geofence[1];
-				const lon = geofence[2];
-				const marker = L.marker([lat, lon], { icon: dangerIcon }).bindPopup(`<b>Danger Zone</b><br>Name: ${geofence[0]}`);
+				let lat = geofence[1];
+				let lon = geofence[2];
+				let marker = L.marker([lat, lon], { icon: dangerIcon }).bindPopup(`<b>Danger Zone</b><br>Name: ${geofence[0]}`);
 				dangerGroup.addLayer(marker);
 			});
 			return dangerGroup;
@@ -325,7 +339,9 @@
 
 		// Initialize the geofences
 		const geofences = JSON.parse('{{ geofences|tojson }}');
-		const dangerZones = addDangerZones(map, geofences);
+		console.log(geofences);
+		let dangerZones = addDangerZones(map, geofences);
+
 
 		// Add layer control to the map
 		const baseLayers = {};

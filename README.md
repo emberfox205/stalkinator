@@ -56,13 +56,13 @@ Turn the device into a Thing/Device and note the Thing ID to register on the web
 Run `app.py` for the application itself. Follow standard Flask procedures to open a localhost website. `app.py` can be run independently without Arduino data for demonstration purposes.
 
 ```bash
-python3 app.py
+python app.py
 ```
 
 Run `data_script.py` to interact with the Arduino Cloud API.
 
 ```bash
-python3 data_script.py
+python data_script.py
 ```
 
 > [!WARNING]

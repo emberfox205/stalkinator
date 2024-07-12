@@ -82,24 +82,28 @@
 					<p><input name="lon" type="number" step="any" min="-180" max="180" placeholder="Input Longtitude" id="lon-textbox" onkeyup="checkNum(event)" autofocus></p>
 					<div class="slidecontainer">
 						<label for="safeRange">Safezone Radius (metres)</label>
-						<input name="safeRange" type="range" min="5" max="5000" class="slider" id="saferange">
-						<input name="safeRangeText" type="number" min="5" max="5000" class="radius-text" id="saferange-text" onkeyup="checkNum(event)">
-						<p>Value: <span id="display-radius"></span></p>
+						<input name="safeRange" type="range" min="1" max="5000" class="slider" id="saferange">
+						<input name="safeRangeText" type="number" min="1" max="5000" class="radius-text" id="saferange-text" onkeyup="checkNum(event)">
+						<p>Current radius: <span id="display-radius"></span></p>
 					</div>
 					<button class="button" onclick="safezoneReset()" id="reset-button">Reset</button>
-					<input type="submit" class="button" id="safezone-submit" value="Save">
+					<input type="submit" class="button" id="safezone-submit" value="Confirm">
 				</form>
 			</li>
 			<li id="dangerzone-content">
 				<h3>DANGERZONE</h3>
 				<div id=dangerzone-container>
 					<form id=dangerzone-types>
-						<p><input type="checkbox" name="all-dangerzone" id="all-dangerzone"><b> All locations</b></p>
 						<p><input type="checkbox" name="demo-1"> Cafe</p>
-						<p><input type="checkbox" name="bars-n-clubs" id="bars-n-clubs" onchange="toggleGeofences()" checked> Billiards</p>
+						<p><input type="checkbox" name="billiards" id="billiards" onchange="toggleGeofences()" checked> Billiards</p>
 						<p><input type="checkbox" name="demo-2"> Bars & Clubs</p>
-						<p><input type="checkbox" name="demo-3"> Accomodations</p>
+						<p><input type="checkbox" name="demo-3"> Accomodations</p>	
 					</form>
+				</div>
+				<div>
+					<button class="button" onclick="selectAll()" id="select-all">Select All</button>
+					<br>
+					<button class="button" onclick="deselectAll()" id="deselect-all">Deselect All</button>
 				</div>
 			</li>
 			<li id="settings-content">
@@ -111,7 +115,7 @@
 					<p><input name="pass_reset" placeholder="Input New Password" id="reset-password" autofocus></p>
 					<p><label for="tid_reset">Reset Thing ID</label></p>
 					<p><input name="tid_reset" placeholder="Input New Thing ID" id="reset-thing-id" autofocus></p>
-					<input type="submit" class="button" id="safezone-submit" value="Save">
+					<input type="submit" class="button" id="safezone-submit" value="Confirm">
 				</form>				
 			<li>
 		</ul>
@@ -223,6 +227,7 @@
 			});
 		}
 
+		// Add dangerZone markers (there was somehow a duplication)
 		function addDangerZones(map, geofences) {
             const dangerGroup = L.layerGroup();
             geofences.forEach(function (geofence) {
@@ -235,7 +240,7 @@
         }
 
 		function toggleGeofences() {
-			var checkbox = document.getElementById('bars-n-clubs');
+			var checkbox = document.getElementById('billiards');
 			if (checkbox.checked) {
 				dangerZones.addTo(map);
 			} else {
@@ -263,13 +268,13 @@
 						console.log("Adding marker at %f, %f for time %s", marker.lat, marker.lon, date.toLocaleString());
 
 						markers.push(marker);
-						var leafletMarker = L.marker([marker.lat, marker.lon]).addTo(map).bindPopup(`${marker.lat}\r\n${marker.lon}`);
+						var leafletMarker = L.marker([marker.lat, marker.lon]).addTo(map).bindPopup(`<b>Latest Position</b> <br> <b>lat: </b>${marker.lat}\r <b>lng: </b>${marker.lon}`);
 						leafletMarkers.push(leafletMarker);
 
 						let element = document.createElement("button")
 						element.className = "w3-bar-item w3-button";
 						element.id = "entry";
-						element.textContent = `${marker.lat}N,\r\n${marker.lon}E\r\n${date.toLocaleString()}`
+						element.textContent = `Lat: ${marker.lat}\nLng: ${marker.lon}\r\n${date.toLocaleString()}`
 						element.style = "font-size: 14px; color: white;";
 						element.marker_index = marker.index;
 						element.addEventListener("click", zoomToPosition)
@@ -305,6 +310,25 @@
 			})
 		}
 
+		// Select all options in Dangerzones
+		function selectAll() {
+			var form = document.getElementById('dangerzone-types');
+			Array.from(form.elements).forEach(function(input) {
+				// Check if the input is directly a child of the form or nested inside a <p>
+				if (input.tagName === 'INPUT') {
+					input.checked = true;
+				}
+			})};
+
+		// Deselect all options in Dangerzones
+		function deselectAll() {
+			var form = document.getElementById('dangerzone-types');
+			Array.from(form.elements).forEach(function(input) {
+				// Check if the input is directly a child of the form or nested inside a <p>
+				if (input.tagName === 'INPUT') {
+					input.checked = false;
+				}
+			})};
 	
 		// Initial setup
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -324,18 +348,6 @@
 			iconUrl: '../static/icons/dangerzone.png',
 			iconSize: [34, 60],
 		});
-
-		// Create danger zone markers
-		function addDangerZones(map, geofences) {
-			let dangerGroup = L.layerGroup();
-			geofences.forEach(function (geofence) {
-				let lat = geofence[1];
-				let lon = geofence[2];
-				let marker = L.marker([lat, lon], { icon: dangerIcon }).bindPopup(`<b>Danger Zone</b><br>Name: ${geofence[0]}`);
-				dangerGroup.addLayer(marker);
-			});
-			return dangerGroup;
-		}
 
 		// Initialize the geofences
 		const geofences = JSON.parse('{{ geofences|tojson }}');

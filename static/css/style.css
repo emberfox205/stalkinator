@@ -46,7 +46,9 @@ body {
 
 #last-position-button,
 #safezone-submit,
-#reset-button {
+#reset-button,
+#select-all,
+#deselect-all {
     margin-top: 20px;
     margin-bottom: 20px;
     width: 80%;
@@ -61,13 +63,16 @@ body {
 
 #last-position-button:hover,
 #safezone-submit:hover,
-#reset-button:hover {
+#reset-button:hover,
+#select-all:hover,
+#deselect-all:hover {
     background-color: #000000;
     color:#ffffff;
     border-style: solid;
     border-color: #ffffff;
     border-radius: 5px;
 }
+
 
 #close-button {
     float: left;

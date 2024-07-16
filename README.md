@@ -72,6 +72,7 @@ python data_script.py
 
 ## Credits
 
+- [Arduino iot-api Python client](https://github.com/arduino/iot-client-pyhttps://github.com/arduino/iot-client-py)
 - [GPS Tracking guide - Text](https://iot.microchip.com/docs/arduino/examples/GPS%20Tracker/Arduino%20Sketch)
 - [GPS Tracking guide - Video](https://www.youtube.com/watch?v=WYT7r62AEYo&t=6s)
 - [Icons](https://www.flaticon.com/)

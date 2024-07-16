@@ -151,6 +151,9 @@
 	
 		function toggle_hide() {
 			document.getElementById("content-fields").style.width = "0";
+			tab_buttons.forEach(function(button) {
+				document.getElementById(button + "-content").style.display = "none";
+			});
 		}
 	
 		function goToLastPosition() {
@@ -318,7 +321,9 @@
 				if (input.tagName === 'INPUT') {
 					input.checked = true;
 				}
-			})};
+			});
+			toggleGeofences();
+		};
 
 		// Deselect all options in Dangerzones
 		function deselectAll() {
@@ -328,7 +333,9 @@
 				if (input.tagName === 'INPUT') {
 					input.checked = false;
 				}
-			})};
+			});
+			toggleGeofences();
+		};
 	
 		// Initial setup
 		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

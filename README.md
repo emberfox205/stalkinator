@@ -2,7 +2,9 @@
 
 ![Static Badge](https://img.shields.io/badge/Python-3.12.0-blue?style=flat&logo=Python&logoColor=white)
 
-A Flask-based web application that tracks children's location to aid parental control using (mainly) Arduino Cloud.
+A Flask-based web application that tracks children's location to aid parental control using Arduino Cloud.
+
+[Github repository](https://github.com/emberfox205/stalkinator)
 
 ## Setup
 
@@ -73,8 +75,9 @@ python data_script.py
 ## Credits
 
 - [Arduino iot-api Python client](https://github.com/arduino/iot-client-pyhttps://github.com/arduino/iot-client-py)
+- [Geoapify Places API](https://www.geoapify.com/places-api/)
 - [GPS Tracking guide - Text](https://iot.microchip.com/docs/arduino/examples/GPS%20Tracker/Arduino%20Sketch)
 - [GPS Tracking guide - Video](https://www.youtube.com/watch?v=WYT7r62AEYo&t=6s)
 - [Icons](https://www.flaticon.com/)
-- [Documentation for markers, circles and some other map elements](https://leafletjs.com/)
+- [Leafletjs](https://leafletjs.com/)
 - [Map display](https://www.openstreetmap.org/)
